@@ -11,3 +11,11 @@ before_install: .travis/before.sh
 after_success: .travis/after.sh
 git:
   depth: 1
+env:
+  - CXX=g++-4.8
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.8
