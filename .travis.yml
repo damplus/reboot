@@ -1,0 +1,13 @@
+sudo: false
+language: node_js
+cache:
+  directories:
+    - node_modules
+notifications:
+  email: false
+node_js:
+  - "5"
+before_install: .travis/befor.sh
+after_success: .travis/after.sh
+git:
+  depth: 1
