@@ -7,8 +7,8 @@ notifications:
   email: false
 node_js:
   - "6"
-before_install: .travis/before.sh
-after_success: .travis/after.sh
+before_install: bash .travis/before.sh
+after_success: bash .travis/after.sh
 git:
   depth: 1
 env:
