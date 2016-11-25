@@ -1,0 +1,33 @@
+{
+  "name": "reboot-core",
+  "description": "Reboot React Framework",
+  "main": "dist/es5/index.js",
+  "typings": "dist/es6/index.d.ts",
+  "scripts": {
+    "transpile": "node ../../scripts/build",
+    "test": "node ../../scripts/test"
+  },
+  "dependencies": {
+    "querystring": "^0.2.0",
+    "route-recognizer": "^0.2.7",
+    "xstream": "^7.0.0"
+  },
+  "peerDependencies": {
+    "@types/react": "^0.14.35",
+    "react": "^15.1.0"
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/lodash": "^4.14.37",
+    "@types/mocha": "^2.2.32",
+    "@types/node": "^6.0.42",
+    "@types/react": "^0.14.35",
+    "@types/react-addons-test-utils": "^0.14.15",
+    "@types/react-dom": "^0.14.18"
+  }
+}
