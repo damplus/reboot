@@ -36,9 +36,9 @@ chai.use(ce())
 
 const mocha = new Mocha();
 
-fs.readdirSync(path.join(basepath, 'test')).forEach(file => {
+fs.readdirSync(path.join(process.cwd(), 'test')).forEach(file => {
   mocha.addFile(
-    path.resolve(path.join(basepath, 'test', file))
+    path.resolve(path.join(process.cwd(), 'test', file))
   )
 })
 
