@@ -14,7 +14,8 @@
   },
   "peerDependencies": {
     "@types/react": "^0.14.35",
-    "react": "^15.1.0"
+    "react": "^15.1.0",
+    "redux": "^3.6.0"
   },
   "files": [
     "src",
