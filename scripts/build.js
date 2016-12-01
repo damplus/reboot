@@ -9,5 +9,6 @@ transpileTS('es5')
 transpileTS('es6')
 
 function transpileTS(mode) {
-  execSync(`${tsc} --outDir ${path.join('dist', mode)} --rootDir src --target ${mode}`, { stdio: [0,1,2] })
+  const outDir = path.join('dist', mode)
+  execSync(`${tsc} --outDir ${outDir} --rootDir src --target ${mode}`, { stdio: [0,1,2] })
 }
