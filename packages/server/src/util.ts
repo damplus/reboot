@@ -1,12 +1,10 @@
 import { Stream } from 'xstream'
 
-export interface PublicStream<T> extends Stream<T> {}
-
-export function toPromise<T>(stream: Stream<T>): Promise<T | undefined> {
-  return new Promise<T>((resolve, reject) => {
+export function toPromise<T>(stream: Stream<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
     stream.addListener({
       next: x => resolve(x),
-      complete: () => resolve(undefined),
+      complete: () => reject(new Error('Empty stream')),
       error: reject
     })
   })

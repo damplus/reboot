@@ -18,7 +18,7 @@ export interface MountRequest {
 
 
   /** Query parameters in the url */
-  queryParams: QueryParams
+  queryParams?: QueryParams
 
   /**
    * Opaque object containing path parameters.
