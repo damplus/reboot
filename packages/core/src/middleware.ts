@@ -45,7 +45,7 @@ export function compose<
  * Terminate the middleware sequence
  */
 export function terminate(): NextFn<{}> {
-  return () => Promise.resolve(defaultResponse())
+  return async () => defaultResponse()
 }
 
 
