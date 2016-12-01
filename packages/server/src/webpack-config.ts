@@ -40,8 +40,13 @@ export function webpackConfig(opts: WebpackOpts): {} {
     },
     resolve: {
       extensions,
-      modules: [
-        'node_modules'
+      fallback: [
+        path.resolve(path.join(__dirname, '..', '..', 'node_modules'))
+      ]
+    },
+    resolveLoader: {
+      fallback: [
+        path.resolve(path.join(__dirname, '..', '..', 'node_modules'))
       ]
     },
     module: {
@@ -89,10 +94,7 @@ export function webpackConfig(opts: WebpackOpts): {} {
     },
     entry: [
       ...opts.includedModules,
-      opts.entry,
-      ...conditional(opts.devserver, [
-        'webpack-hot-middleware/client?reload=true',
-      ]),
+      opts.entry
     ],
     plugins: [
       new webpack.DefinePlugin(processEnv),
@@ -145,6 +147,10 @@ export function webpackConfig(opts: WebpackOpts): {} {
       }
     },
     postcss: () => [ flexbugs, autoprefixer({ browsers: browserTarget }) ],
+  }
+
+  if (process.env.REBOOT_DEBUG) {
+    console.log(require('util').inspect(config))
   }
 
   return config

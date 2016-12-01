@@ -25,9 +25,9 @@ global.navigator = {
 
 /** Chai Plugins */
 
-var ce = require('chai-enzyme')
 var chai = require('chai')
-chai.use(ce())
+chai.use(require('chai-enzyme')())
+chai.use(require('chai-cheerio'))
 
 
 

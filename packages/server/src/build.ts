@@ -14,7 +14,6 @@ const { argv } = yargs
   .option('s', { description: 'Server entrypoint', required: true })
 
 const clientSource = argv._
-  .map((x: string) => './' + x)
 const outDir = argv.o
 const serverSource = argv.s
 

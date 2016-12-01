@@ -29,7 +29,7 @@ export function devMiddleware(entry: string, opts: ServeOpts = {}): RequestHandl
   return compose([
     devserver(compiler, {
       publicPath: '/',
-      stats: false,
+      stats: true,
       historyApiFallback: true,
     }),
     hot(compiler),
