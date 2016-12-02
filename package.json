@@ -9,6 +9,7 @@
   "description": "",
   "scripts": {
     "bootstrap": "lerna bootstrap --ignore-peer-deps",
+    "semantic-release": "lerna-semantic-release pre && lerna-semantic-release post && lerna-semantic-release perform",
     "test": "node scripts/build-all && lerna run test"
   },
   "keywords": [],
