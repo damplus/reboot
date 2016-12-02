@@ -5,8 +5,7 @@
   "main": "dist/es5/index.js",
   "typings": "dist/es6/index.d.ts",
   "scripts": {
-    "transpile": "node ../../scripts/build",
-    "test": "node ../../scripts/test"
+    "transpile": "node ../../scripts/build"
   },
   "bin": {
     "build-reboot-app": "dist/es5/build.js"
