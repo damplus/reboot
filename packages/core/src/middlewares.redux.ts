@@ -4,7 +4,7 @@ import { Stream } from 'xstream'
 import { Middleware } from './middleware'
 
 export interface Store<T> {
-  dispatch(a: Action): void
+  dispatch<A extends Action>(a: A): void
   bind<P>(actionCreator: ActionCreator<P>): (param: P) => void
 
   select$<C>(fn: (state: T) => C): Stream<C>
