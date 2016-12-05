@@ -5,6 +5,16 @@ const fs = require('fs')
 require('ts-node/register')
 
 
+/** Polyfills */
+
+const fetch = require('node-fetch')
+global.fetch = fetch;
+global.Response = fetch.Response;
+global.Headers = fetch.Headers;
+global.Request = fetch.Request;
+
+
+
 /** JSDOM Setup */
 
 // Fake out a DOM for testing React components
