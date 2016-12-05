@@ -1,5 +1,6 @@
 import { createStore as defaultCreateStore, combineReducers, Action, Reducer, ReducersMapObject, Store as ReduxStore } from 'redux'
 import { Stream } from 'xstream'
+import dropRepeats from 'xstream/extra/dropRepeats'
 
 import { Middleware } from './middleware'
 
@@ -64,7 +65,7 @@ function wrapStore<T>({ store, reducers, $ }: { store: ReduxStore<T>, reducers: 
   return {
     dispatch: store.dispatch,
     bind: <P>(ac: ActionCreator<P>) => (p: P) => { store.dispatch(ac(p)) },
-    select$: <C>(fn: (state: T) => C) => $.map(fn),
+    select$: <C>(fn: (state: T) => C) => $.map(fn).compose(dropRepeats()),
     addReducer: <Key extends string, Shape>(key: Key, fn: Reducer<Shape>): Store<T & Record<Key, Shape>> => {
       const nextReducers = { ...reducers, [key as any]: fn }
       store.replaceReducer(combineReducers<T>(nextReducers))
