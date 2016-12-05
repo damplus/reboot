@@ -1,5 +1,6 @@
-import { Listener } from 'xstream'
+import { Listener, Stream } from 'xstream'
 import * as rb from '../src'
+import { toPromise } from '../src/util'
 
 export function createTestRequest(): rb.MountRequest {
   return {
@@ -8,6 +9,10 @@ export function createTestRequest(): rb.MountRequest {
     queryParams: {},
     route: new rb.Route({ middleware: rb.noopMiddleware(), path: '/' })
   }
+}
+
+export function collect<T>(stream: Stream<T>): Promise<T[]> {
+  return toPromise(stream.fold<T[]>((prev, x) => [...prev, x], []).last())
 }
 
 export async function applyMiddleware<Rs>(m: rb.Middleware<rb.MountRequest, Rs>) {
