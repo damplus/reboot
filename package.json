@@ -37,7 +37,7 @@
     "ts-node": "^1.7.0",
     "tslint": "^4.0.2",
     "typescript": "^2.2.0-dev.20161123",
-    "xstream": "^9.0.0"
+    "xstream": "^10.0.0"
   },
   "devDependencies": {
     "cz-lerna-changelog": "^0.3.0",
