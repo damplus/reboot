@@ -28,7 +28,7 @@ export function addStore(createStore?: () => ReduxStore<{}>): Middleware<{}, Sto
   return (req, next) => {
     let unsubscribe = () => {}
     const reduxStore = createStore ? createStore() : defaultCreateStore(() => ({}))
-    const $ = Stream.create({
+    const $ = Stream.createWithMemory({
       start: listener => {
         listener.next(reduxStore.getState())
         unsubscribe = reduxStore.subscribe(() => {
