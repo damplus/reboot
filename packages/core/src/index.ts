@@ -12,7 +12,7 @@ export { Transition, transition$, requestTransition, stringifyTransition, Link }
 export { Middleware, NextFn } from './middleware'
 
 export { render, renderContainer, renderTitle } from './middlewares.rendering'
-export { requestProps } from './middlewares.request'
+export { requestProps, requestProp } from './middlewares.request'
 export { addStore, addReducer } from './middlewares.redux'
 
 export { HttpClient, StubbedEndpoints, HasHTTPClient, addHttpClient, addStubHttpClient } from './http'
