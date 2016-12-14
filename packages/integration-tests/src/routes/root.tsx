@@ -1,8 +1,9 @@
 import * as React from 'react'
-import { app, renderContainer, Route, Link, BaseRequest } from 'reboot-core'
+import { app, renderContainer, Route, transitionProps, BaseRequest } from 'reboot-core'
 
 import counter from './counter'
 import guestbook from './guestbook'
+import greeter from './greeter'
 
 require('../style.css')
 
@@ -15,13 +16,17 @@ export function App(props: { children?: React.ReactChild }) {
     <div>
       <div>
         <h1>reboot</h1>
-        <Link route={{ handler: counter, params: {} }}>
+        <a {...transitionProps({ handler: counter, params: {} })}>
           Counter
-        </Link>
+        </a>
         {' | '}
-        <Link route={{ handler: guestbook, params: {} }}>
+        <a {...transitionProps({ handler: guestbook, params: {} })}>
           Guestbook
-        </Link>
+        </a>
+        {' | '}
+        <a {...transitionProps({ handler: greeter, params: { name: 'world' } })}>
+          Greet
+        </a>
       </div>
       {props.children}
     </div>

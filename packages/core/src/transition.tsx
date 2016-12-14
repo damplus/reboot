@@ -1,13 +1,13 @@
 import * as React from 'react'
 import { Stream, Listener } from 'xstream'
-import { size, omit } from 'lodash'
+import { size } from 'lodash'
 import * as qs from 'querystring'
 
-import { BaseRequest, QueryParams } from './request'
-import { Route } from './route'
+import { QueryParams } from './request'
+import { RouteWithParams } from './route'
 
-export class Transition<Params> {
-  handler: Route<BaseRequest & Params> | (() => Route<BaseRequest & Params>)
+export interface Transition<RouteParams, Params extends RouteParams> {
+  handler: RouteWithParams<RouteParams> | (() => RouteWithParams<RouteParams>)
   params: Params
   queryParams?: QueryParams
 }
@@ -21,13 +21,13 @@ export const transition$ = Stream.create<string>({
   stop() {}
 })
 
-export function requestTransition<T>(t: Transition<T>) {
+export function requestTransition<RouteParams, Params extends RouteParams>(t: Transition<RouteParams, Params>) {
   if (transitionListener) {
     transitionListener.next(stringifyTransition(t))
   }
 }
 
-export function stringifyTransition<T>(t: Transition<T> | string): string {
+export function stringifyTransition<RouteParams, Params extends RouteParams>(t: Transition<RouteParams, Params> | string): string {
   if (typeof t === 'string') return t
 
   const handler = (typeof t.handler === 'function') ? t.handler() : t.handler
@@ -43,17 +43,14 @@ export function stringifyTransition<T>(t: Transition<T> | string): string {
   return str
 }
 
-export function Link(props: React.HTMLProps<HTMLElement> & { route: Transition<{}> }) {
-  return (
-    <a
-      {...omit(props, 'route')}
-      href={stringifyTransition(props.route)}
-      onClick={e => {
-        if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-          requestTransition(props.route)
-          e.preventDefault()
-        }
-      }}
-    />
-  )
+export function transitionProps<RouteParams, Params extends RouteParams>(target: Transition<RouteParams, Params>): React.HTMLProps<HTMLAnchorElement> {
+  return {
+    href: stringifyTransition(target),
+    onClick: e => {
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        requestTransition(target)
+        e.preventDefault()
+      }
+    }
+  }
 }

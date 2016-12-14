@@ -15,6 +15,6 @@ export default function main(opts: { production: boolean, buildDir?: string }) {
       server.use(devMiddleware('./src/entrypoints/client'))
     }
 
-    const instance = server.listen(0, () => resolve(instance))
+    const instance = server.listen(process.env.PORT || 0, () => resolve(instance))
   })
 }

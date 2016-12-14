@@ -5,7 +5,7 @@ import { Transition } from './transition'
 
 export type MountResponse
 = MountRender
-| MountRedirect
+| MountRedirect<{}, {}>
 
 export interface MountRender {
   state: 'render'
@@ -21,14 +21,14 @@ export interface MountRender {
 }
 
 
-export interface MountRedirect {
+export interface MountRedirect<RouteParams, Params extends RouteParams> {
   state: 'redirect'
 
   /** Status code to return if running on a server (defaults to 301) */
   status?: number
 
   /** Location to redirect to */
-  location: Transition<{}>
+  location: Transition<RouteParams, Params>
 }
 
 

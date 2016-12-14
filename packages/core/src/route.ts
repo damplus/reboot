@@ -11,6 +11,8 @@ export interface RouteProps<R extends BaseRequest> {
   middleware: Middleware<BaseRequest, R>
 }
 
+export interface RouteWithParams<P> extends Route<BaseRequest & { pathParams: P }> {}
+
 export class Route<R extends BaseRequest> implements RouteProps<R> {
   path: string
   middleware: Middleware<BaseRequest, R>
@@ -45,18 +47,12 @@ export class Route<R extends BaseRequest> implements RouteProps<R> {
   }
 
   subroute(subpath: string): Route<R>
-  subroute<Params>(subpath: string, getParams: (params: { [key: string]: string }) => Params): Route<R & Params>
+  subroute<ParamKeys extends string>(subpath: string, ...paramKeys: ParamKeys[]): Route<R & { pathParams: Record<ParamKeys, string> }>
   subroute(subpath: string, getParams?: (params: any) => any): any {
-    const subroute = new Route({
+    return new Route({
       path: path.join(this.path, subpath),
       middleware: this.middleware
     })
-
-    if (!getParams) {
-      return subroute
-    }
-
-    return subroute.use((req, next) => next(getParams(req.pathParams)))
   }
 }
 

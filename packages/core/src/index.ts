@@ -8,7 +8,7 @@ export { BaseRequest } from './request'
 export { MountRender, defaultResponse } from './response'
 export { Matcher, createMatcher } from './match'
 export { app, Route } from './route'
-export { Transition, transition$, requestTransition, stringifyTransition, Link } from './transition'
+export { Transition, transition$, requestTransition, stringifyTransition, transitionProps } from './transition'
 export { Middleware, NextFn } from './middleware'
 
 export { render, renderContainer, renderTitle } from './middlewares.rendering'

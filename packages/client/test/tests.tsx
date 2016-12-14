@@ -97,8 +97,8 @@ interface RendererParams {
 
   transitions$?: Stream<string>
   onTitleChange?: (title: string) => void
-  onPushLocation?: (location: lib.Transition<{}>, title: string, url: string) => void
-  onReplaceLocation?: (location: lib.Transition<{}>, title: string, url: string) => void
+  onPushLocation?: (location: lib.Transition<{}, {}>, title: string, url: string) => void
+  onReplaceLocation?: (location: lib.Transition<{}, {}>, title: string, url: string) => void
 }
 
 async function createClientRenderer(props: RendererParams) {
