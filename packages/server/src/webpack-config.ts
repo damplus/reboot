@@ -94,6 +94,9 @@ export function webpackConfig(opts: WebpackOpts): {} {
     },
     entry: [
       ...opts.includedModules,
+      ...conditional(opts.devserver, [
+        'webpack-hot-middleware/client?timeout=2000&overlay=false&reload=true'
+      ]),
       opts.entry
     ],
     plugins: [
