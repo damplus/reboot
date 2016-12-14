@@ -2,6 +2,7 @@ import * as React from 'react'
 import { app, render, renderContainer, Route, Link, MountRequest } from 'reboot-core'
 
 import counter from './counter'
+import guestbook from './guestbook'
 
 require('../style.css')
 
@@ -13,9 +14,13 @@ export function App(props: { children?: React.ReactChild }) {
   return (
     <div>
       <div>
-        <h1>@damplus/app</h1>
+        <h1>reboot</h1>
         <Link route={{ handler: counter, params: {} }}>
           Counter
+        </Link>
+        {' | '}
+        <Link route={{ handler: guestbook, params: {} }}>
+          Guestbook
         </Link>
       </div>
       {props.children}
