@@ -15,6 +15,10 @@ export function collect<T>(stream: Stream<T>): Promise<T[]> {
   return toPromise(stream.fold<T[]>((prev, x) => [...prev, x], []).last())
 }
 
+export function waitFor<T>(s: Stream<T>, cond: (x: T) => boolean) {
+  return toPromise(s.filter(cond).take(1))
+}
+
 export async function applyMiddleware<Rs>(m: rb.Middleware<rb.MountRequest, Rs>) {
   let request: Rs | undefined
   const response = await m(createTestRequest(), async (req) => {
