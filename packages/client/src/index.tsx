@@ -205,10 +205,10 @@ export class Client extends React.Component<ClientProps, ClientState> {
             this.routeDidTransition()
 
             if (replaceState) {
-              this.props.onReplaceLocation(target, title, stringifyTransition(target))
+              this.props.onReplaceLocation(undefined, title, stringifyTransition(target))
 
             } else {
-              this.props.onPushLocation(target, title, stringifyTransition(target))
+              this.props.onPushLocation(undefined, title, stringifyTransition(target))
             }
           }))
         })
