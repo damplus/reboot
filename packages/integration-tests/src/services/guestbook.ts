@@ -31,13 +31,13 @@ export class GuestbookService {
   }
 
   update(id: number, value: Partial<GuestbookPost>) {
-    this.posts.mutate(id, { type: 'patch', value }, () =>
+    this.posts.mutate(String(id), { type: 'patch', value }, () =>
       this.http(`https://jsonplaceholder.typicode.com/posts/${id}`, { method: 'patch' })
     )
   }
 
   delete(id: number) {
-    this.posts.mutate(id, { type: 'delete' }, () =>
+    this.posts.mutate(String(id), { type: 'delete' }, () =>
       this.http(`https://jsonplaceholder.typicode.com/posts/${id}`, { method: 'delete' })
     )
   }

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { render, renderTitle, addStore, addHttpClient, requestProps, ResourceMutation, applyResourceMutation } from 'reboot-core'
+import { addStore, addHttpClient, ResourceMutation, applyResourceMutation } from 'reboot-core'
 
 import { GuestbookService, GuestbookPost } from '../services/guestbook'
 import root from './root'
@@ -8,18 +8,16 @@ export default () => root()
   .subroute('/guestbook')
   .use(addStore())
   .use(addHttpClient())
-  .use(renderTitle(() => 'Guestbook'))
-  .use(requestProps(opts => ({
-    guestbook: new GuestbookService(opts)
-  })))
-  .use(render(GuestbookView))
+  .title('Guestbook')
+  .add('guestbook', GuestbookService)
+  .render(renderGuestbook)
 
 
 interface GuestbookViewProps {
   guestbook: GuestbookService
 }
 
-export function GuestbookView({ guestbook }: GuestbookViewProps) {
+export function renderGuestbook({ guestbook }: GuestbookViewProps) {
   return guestbook.allPosts.map(posts =>
     <div>
       <h2>Posts</h2>

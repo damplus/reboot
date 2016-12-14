@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { app, render, renderContainer, Route, Link, MountRequest } from 'reboot-core'
+import { app, renderContainer, Route, Link, MountRequest } from 'reboot-core'
 
 import counter from './counter'
 import guestbook from './guestbook'
@@ -8,7 +8,7 @@ require('../style.css')
 
 export default (): Route<MountRequest> => app()
   .use(renderContainer(() => <App />))
-  .use(render(() => <Home />))
+  .render(<Home />)
 
 export function App(props: { children?: React.ReactChild }) {
   return (

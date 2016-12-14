@@ -3,6 +3,8 @@ import * as path from 'path'
 
 import { MountRequest } from './request'
 import { Middleware, compose, noop } from './middleware'
+import { requestProp } from './middlewares.request'
+import { RenderFn, render, renderTitle } from './middlewares.rendering'
 
 export interface RouteProps<R extends MountRequest> {
   path: string
@@ -22,6 +24,24 @@ export class Route<R extends MountRequest> implements RouteProps<R> {
       path: this.path,
       middleware: compose(this.middleware, m)
     })
+  }
+
+  add<Key extends string, T>(key: Key, Class: new (props: R) => T): Route<R & Record<Key, T>> {
+    return this.use(
+      requestProp(key, (req: R) => new Class(req))
+    )
+  }
+
+  render(element: React.ReactElement<{}> | RenderFn<R, React.ReactElement<{}>>): Route<R> {
+    return this.use(
+      render(typeof element === 'function' ? element : () => element)
+    )
+  }
+
+  title(title: string | RenderFn<R, string>): Route<R> {
+    return this.use(
+      renderTitle(typeof title === 'function' ? title : () => title)
+    )
   }
 
   subroute(subpath: string): Route<R>
