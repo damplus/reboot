@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as path from 'path'
 import { renderToString, renderToStaticMarkup } from 'react-dom/server'
 import { RequestHandler } from 'express'
-import { MountRequest, createMatcher, Route } from 'reboot-core'
+import { BaseRequest, createMatcher, Route } from 'reboot-core'
 
 import { render } from './render'
 import { ServeOpts } from './index'
@@ -10,7 +10,7 @@ import { ServeOpts } from './index'
 export function renderMiddleware(buildDir: string, opts: ServeOpts = {}): RequestHandler {
   const routes: RouteDeclaration[] = require(path.resolve(path.join(buildDir, 'bundle.js'))).default
 
-  const matcher = createMatcher<Route<MountRequest>>()
+  const matcher = createMatcher<Route<BaseRequest>>()
   routes.forEach(r => {
     const route = unpackRouteDeclaration(r)
     matcher.add([{ path: route.path, handler: route }])
@@ -52,8 +52,8 @@ export function renderMiddleware(buildDir: string, opts: ServeOpts = {}): Reques
   )
 }
 
-export type RouteDeclaration = Route<MountRequest> | (() => Route<MountRequest>)
+export type RouteDeclaration = Route<BaseRequest> | (() => Route<BaseRequest>)
 
-export function unpackRouteDeclaration(routeDeclaration: RouteDeclaration): Route<MountRequest> {
+export function unpackRouteDeclaration(routeDeclaration: RouteDeclaration): Route<BaseRequest> {
   return (typeof routeDeclaration === 'function') ? routeDeclaration() : routeDeclaration
 }

@@ -1,12 +1,12 @@
 import * as React from 'react'
-import { app, renderContainer, Route, Link, MountRequest } from 'reboot-core'
+import { app, renderContainer, Route, Link, BaseRequest } from 'reboot-core'
 
 import counter from './counter'
 import guestbook from './guestbook'
 
 require('../style.css')
 
-export default (): Route<MountRequest> => app()
+export default (): Route<BaseRequest> => app()
   .use(renderContainer(() => <App />))
   .render(<Home />)
 

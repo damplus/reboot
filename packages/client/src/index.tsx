@@ -6,7 +6,7 @@ import { uniqueId, assign } from 'lodash'
 
 import {
   terminalNext,
-  MountRequest,
+  BaseRequest,
   MountRender,
   createMatcher,
   Route,
@@ -16,7 +16,7 @@ import {
 import { toPromise, popState$ } from './util'
 
 export interface MountParams {
-  routes: Route<MountRequest>[]
+  routes: Route<BaseRequest>[]
   transitions$: Stream<string>
   path: string
   onTitleChange(title: string): void
@@ -24,7 +24,7 @@ export interface MountParams {
   onReplaceLocation(data: any, title: string, url?: string | null): void
 }
 
-export type RouteDeclaration = Route<MountRequest> | (() => Route<MountRequest>)
+export type RouteDeclaration = Route<BaseRequest> | (() => Route<BaseRequest>)
 
 export default function clientMain(routes: RouteDeclaration[]) {
   return Promise.resolve().then(() =>
@@ -48,17 +48,17 @@ export default function clientMain(routes: RouteDeclaration[]) {
   })
 }
 
-export function unpackRouteDeclaration(routeDeclaration: RouteDeclaration): Route<MountRequest> {
+export function unpackRouteDeclaration(routeDeclaration: RouteDeclaration): Route<BaseRequest> {
   return (typeof routeDeclaration === 'function') ? routeDeclaration() : routeDeclaration
 }
 
 export function start(params: MountParams): Promise<React.ReactElement<{}>> {
-  const matcher = createMatcher<Route<MountRequest>>()
+  const matcher = createMatcher<Route<BaseRequest>>()
   params.routes.forEach(r => {
     matcher.add([{ path: r.path, handler: r }])
   })
 
-  const matchRoute = (path: string): Transition<{}> => {
+  const matchRoute = (path: string): Transition<{}, {}> => {
     const route = (matcher.recognize(path) || [])[0]
     if (!route) {
       throw new Error(`Could not match ${path}`)
@@ -73,7 +73,7 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
   }
 
   const route = matchRoute(params.path)
-  const req: MountRequest = {
+  const req: BaseRequest = {
     environment: 'client',
     route: unpackRouteDeclaration(route.handler),
     pathParams: route.params,
@@ -114,8 +114,8 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
 }
 
 export interface ClientProps {
-  transitions: Stream<Transition<{}>>
-  initialRequest: MountRequest
+  transitions: Stream<Transition<{}, {}>>
+  initialRequest: BaseRequest
   initialResponse: MountRender
   initialContent?: React.ReactElement<{}>
   onTitleChange(title: string): void
@@ -125,7 +125,7 @@ export interface ClientProps {
 
 export interface ClientState {
   content: React.ReactElement<{}>
-  request: MountRequest
+  request: BaseRequest
   response: MountRender
 }
 
@@ -169,8 +169,8 @@ export class Client extends React.Component<ClientProps, ClientState> {
     this.props.transitions.removeListener(this.transitionListener)
   }
 
-  performTransition(target: Transition<{}>, replaceState?: boolean): Promise<void> {
-    const request: MountRequest = {
+  performTransition(target: Transition<{}, {}>, replaceState?: boolean): Promise<void> {
+    const request: BaseRequest = {
       environment: 'client',
       route: unpackRouteDeclaration(target.handler),
       pathParams: target.params,

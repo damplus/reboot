@@ -3,11 +3,11 @@ import { Stream, Listener } from 'xstream'
 import { size, omit } from 'lodash'
 import * as qs from 'querystring'
 
-import { MountRequest, QueryParams } from './request'
+import { BaseRequest, QueryParams } from './request'
 import { Route } from './route'
 
 export class Transition<Params> {
-  handler: Route<MountRequest & Params> | (() => Route<MountRequest & Params>)
+  handler: Route<BaseRequest & Params> | (() => Route<BaseRequest & Params>)
   params: Params
   queryParams?: QueryParams
 }

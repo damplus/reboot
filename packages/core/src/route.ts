@@ -1,19 +1,19 @@
 import { assign } from 'lodash'
 import * as path from 'path'
 
-import { MountRequest } from './request'
+import { BaseRequest } from './request'
 import { Middleware, compose, noop } from './middleware'
 import { requestProp } from './middlewares.request'
 import { RenderFn, render, renderTitle } from './middlewares.rendering'
 
-export interface RouteProps<R extends MountRequest> {
+export interface RouteProps<R extends BaseRequest> {
   path: string
-  middleware: Middleware<MountRequest, R>
+  middleware: Middleware<BaseRequest, R>
 }
 
-export class Route<R extends MountRequest> implements RouteProps<R> {
+export class Route<R extends BaseRequest> implements RouteProps<R> {
   path: string
-  middleware: Middleware<MountRequest, R>
+  middleware: Middleware<BaseRequest, R>
 
   constructor(props: RouteProps<R>) {
     assign(this, props)

@@ -2,7 +2,7 @@ import { Listener, Stream } from 'xstream'
 import * as rb from '../src'
 import { toPromise } from '../src/util'
 
-export function createTestRequest(): rb.MountRequest {
+export function createTestRequest(): rb.BaseRequest {
   return {
     environment: 'client',
     pathParams: {},
@@ -19,7 +19,7 @@ export function waitFor<T>(s: Stream<T>, cond: (x: T) => boolean) {
   return toPromise(s.filter(cond).take(1))
 }
 
-export async function applyMiddleware<Rs>(m: rb.Middleware<rb.MountRequest, Rs>) {
+export async function applyMiddleware<Rs>(m: rb.Middleware<rb.BaseRequest, Rs>) {
   let request: Rs | undefined
   const response = await m(createTestRequest(), async (req) => {
     request = req

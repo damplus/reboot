@@ -92,7 +92,7 @@ describe('client', () => {
 
 
 interface RendererParams {
-  routes: lib.Route<lib.MountRequest>[]
+  routes: lib.Route<lib.BaseRequest>[]
   path: string
 
   transitions$?: Stream<string>

@@ -4,7 +4,7 @@ import * as qs from 'querystring'
 
 import {
   terminalNext,
-  MountRequest,
+  BaseRequest,
   Matcher,
   Route,
   stringifyTransition
@@ -13,7 +13,7 @@ import {
 import { toPromise, toStream } from './util'
 
 export interface MountParams {
-  matcher: Matcher<Route<MountRequest>>
+  matcher: Matcher<Route<BaseRequest>>
   pathname: string
   query: string
 }
@@ -31,7 +31,7 @@ export function render(params: MountParams): Promise<RenderOutput> {
     return Promise.reject(new Error('Failed to match {params.path}'))
   }
 
-  const req: MountRequest = {
+  const req: BaseRequest = {
     environment: 'server',
     route: route.handler,
     pathParams: route.params,
@@ -54,7 +54,7 @@ export function render(params: MountParams): Promise<RenderOutput> {
 
     } else {
       const location = stringifyTransition(response.location)
-      if (location === stringifyTransition(route)) {
+      if (location === stringifyTransition({ handler: route.handler, params: route.params, queryParams: qs.parse(params.query) })) {
         throw new Error(
           `Encountered recursive redirect (${stringifyTransition(route)} => ${stringifyTransition(response.location)})`
         )

@@ -5,7 +5,7 @@ export interface QueryParams {
   [key: string]: string[] | string | undefined
 }
 
-export interface MountRequest {
+export interface BaseRequest {
   /**
    * The environment of the request
    */
@@ -14,7 +14,7 @@ export interface MountRequest {
   /**
    * The route being mounted
    */
-  route: Route<MountRequest>
+  route: Route<BaseRequest>
 
 
   /** Query parameters in the url */
@@ -29,7 +29,7 @@ export interface MountRequest {
   pathParams: {}
 }
 
-export function equalRoutes(r1: MountRequest, r2: MountRequest): boolean {
+export function equalRoutes(r1: BaseRequest, r2: BaseRequest): boolean {
   return (
     r1.route.path === r2.route.path
     && isEqual(r1.pathParams, r2.pathParams)
