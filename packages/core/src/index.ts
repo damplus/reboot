@@ -15,5 +15,5 @@ export { render, renderContainer, renderTitle } from './middlewares.rendering'
 export { requestProps, requestProp } from './middlewares.request'
 export { addStore, addReducer } from './middlewares.redux'
 
-export { HttpClient, StubbedEndpoints, HasHTTPClient, addHttpClient, addStubHttpClient } from './http'
+export { HttpClient, StubbedEndpoints, HasHTTPClient, addHttpClient, addStubHttpClient, retryRequests } from './http'
 export { Resource, ResourceState, ResourceMutation, applyResourceMutation } from './resource'
