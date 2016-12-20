@@ -9,7 +9,6 @@
   "description": "",
   "scripts": {
     "bootstrap": "lerna bootstrap --ignore-peer-deps",
-    "semantic-release": "lerna-semantic-release pre && lerna-semantic-release post && lerna-semantic-release perform",
     "test": "node scripts/build-all && lerna run test"
   },
   "keywords": [],
@@ -23,6 +22,7 @@
     "chai": "^3.5.0",
     "chai-cheerio": "^1.0.0",
     "chai-enzyme": "^0.6.1",
+    "cz-conventional-changelog": "^1.2.0",
     "enzyme": "^2.6.0",
     "express": "^4.14.0",
     "install": "^0.8.2",
@@ -42,9 +42,7 @@
     "xstream": "^10.0.0"
   },
   "devDependencies": {
-    "cz-lerna-changelog": "^0.3.0",
     "lerna": "2.0.0-beta.30",
-    "lerna-semantic-release": "^8.0.2",
     "@types/chai": "^3.4.34",
     "@types/chai-enzyme": "^0.5.5",
     "@types/classnames": "0.0.30",
@@ -62,7 +60,7 @@
   },
   "config": {
     "commitizen": {
-      "path": "./node_modules/cz-lerna-changelog"
+      "path": "./node_modules/cz-conventional-changelog"
     }
   }
 }

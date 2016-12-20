@@ -4,7 +4,8 @@
   "publishConfig": {
     "ignore": [
       "*.md",
-      ".released-packages"
+      ".released-packages",
+      "packages/integration-tests/**"
     ]
   }
 }

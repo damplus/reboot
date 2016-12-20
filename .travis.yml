@@ -7,11 +7,9 @@ notifications:
   email: false
 node_js:
   - "6"
-before_install: bash .travis/before.sh
 install:
   - npm install
   - npm run bootstrap
-after_success: bash .travis/after.sh
 git:
   depth: 1
 env:
