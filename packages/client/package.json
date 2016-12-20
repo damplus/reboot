@@ -1,7 +1,7 @@
 {
   "name": "reboot-html-client",
   "description": "Reboot React Framework",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "main": "dist/es5/index.js",
   "typings": "dist/es6/index.d.ts",
   "scripts": {

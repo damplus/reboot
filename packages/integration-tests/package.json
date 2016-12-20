@@ -2,7 +2,7 @@
   "name": "reboot-integration-tests",
   "private": true,
   "description": "Reboot React Framework",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "scripts": {
     "start": "node start.js",
     "transpile": "node ../../scripts/build",
@@ -19,8 +19,8 @@
     "cheerio": "^0.22.0",
     "node-fetch": "^1.6.3",
     "reboot-core": "^0.1.0",
-    "reboot-html-client": "^0.1.0",
-    "reboot-server": "^0.1.0",
+    "reboot-html-client": "^0.3.0",
+    "reboot-server": "^0.3.0",
     "rimraf": "^2.5.4"
   }
 }
