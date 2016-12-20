@@ -2,7 +2,7 @@
   "name": "reboot-integration-tests",
   "private": true,
   "description": "Reboot React Framework",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "scripts": {
     "start": "node start.js",
     "transpile": "node ../../scripts/build",
