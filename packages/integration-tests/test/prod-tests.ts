@@ -10,7 +10,7 @@ import startServer from '../src/main'
 describe('production server', function() {
   let server: Server
 
-  before(async function(this: Mocha.IContextDefinition) {
+  before(async function(this: Mocha.IHookCallbackContext) {
     this.timeout(60000)
 
     rimraf.sync('build')

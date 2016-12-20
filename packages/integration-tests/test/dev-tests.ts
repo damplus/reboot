@@ -5,11 +5,11 @@ import * as cheerio from 'cheerio'
 
 import startServer from '../src/main'
 
-describe('dev server', function(this: Mocha.IContextDefinition) {
+describe('dev server', function(this: Mocha.ISuiteCallbackContext) {
   this.timeout(60000)
   let server: Server
 
-  before(async function(this: Mocha.IContextDefinition) {
+  before(async function(this: Mocha.IHookCallbackContext) {
     server = await startServer({ production: false })
   })
 
