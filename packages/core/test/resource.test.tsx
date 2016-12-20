@@ -9,7 +9,7 @@ interface Greeting {
 
 const anError = new Error('Boo')
 
-describe('http middleware', () => {
+describe('resource middleware', () => {
   context('in initial state', () => {
     async function setup() {
       const { request } = await applyMiddleware(addResource('fooResource'))
