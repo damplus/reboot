@@ -1,7 +1,7 @@
 {
   "name": "reboot-html-client",
   "description": "Reboot React Framework",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "main": "dist/es5/index.js",
   "typings": "dist/es6/index.d.ts",
   "scripts": {
@@ -11,7 +11,7 @@
   "dependencies": {
     "lodash": "^4.17.2",
     "querystring": "^0.2.0",
-    "reboot-core": "^0.1.0"
+    "reboot-core": "^0.3.0"
   },
   "peerDependencies": {
     "react": "^15.4.1",
