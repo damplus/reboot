@@ -9,6 +9,7 @@
   "description": "",
   "scripts": {
     "bootstrap": "lerna bootstrap --ignore-peer-deps",
+    "release": "lerna publish",
     "test": "node scripts/build-all && lerna run test"
   },
   "keywords": [],
