@@ -53,7 +53,10 @@ export function webpackConfig(opts: WebpackOpts): {} {
       loaders: [
         {
           test: /\.tsx?$/,
-          loader: 'ts',
+          loaders: [
+            ...conditional(opts.devserver, ['source-map-loader']),
+            'ts'
+          ],
         },
         {
           test: /\.s[ac]ss$/,
