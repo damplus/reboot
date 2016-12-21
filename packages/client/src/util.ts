@@ -12,7 +12,7 @@ export function toPromise<T>(stream: Stream<T>): Promise<T> {
 
 export const popState$ = Stream.create<string>({
   start(listener) {
-    window.onpopstate = (ev) => listener.next(location.href)
+    window.onpopstate = (ev) => listener.next(location.pathname)
   },
   stop() {}
 })
