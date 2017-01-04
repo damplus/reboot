@@ -21,7 +21,7 @@ export const transition$ = Stream.create<string>({
   stop() {}
 })
 
-export function requestTransition<RouteParams, Params extends RouteParams>(t: Transition<RouteParams, Params>) {
+export function requestTransition<RouteParams, Params extends RouteParams>(t: Transition<RouteParams, Params> | string) {
   if (transitionListener) {
     transitionListener.next(stringifyTransition(t))
   }

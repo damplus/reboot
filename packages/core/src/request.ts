@@ -27,6 +27,10 @@ export interface BaseRequest {
    * `subroute` method to to extract the parameters in a typesafe manner
    **/
   pathParams: {}
+
+
+  /** Re-mounts the current route */
+  refresh: () => void
 }
 
 export function equalRoutes(r1: BaseRequest, r2: BaseRequest): boolean {
