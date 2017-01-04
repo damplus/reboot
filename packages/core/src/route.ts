@@ -48,7 +48,7 @@ export class Route<R extends BaseRequest> implements RouteProps<R> {
 
   subroute(subpath: string): Route<R>
   subroute<ParamKeys extends string>(subpath: string, ...paramKeys: ParamKeys[]): Route<R & { pathParams: Record<ParamKeys, string> }>
-  subroute(subpath: string, getParams?: (params: any) => any): any {
+  subroute(subpath: string): Route<any> {
     return new Route({
       path: path.join(this.path, subpath),
       middleware: this.middleware
