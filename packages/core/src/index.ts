@@ -14,7 +14,7 @@ export { Middleware, NextFn } from './middleware'
 export { render, renderContainer, renderTitle } from './middlewares.rendering'
 export { requestProps, requestProp } from './middlewares.request'
 export { addStore, addReducer, Store, StoreRequest } from './middlewares.redux'
-export { oauth, requiresLogin, IsLoggedIn, AuthService, HasAuthService, LoginParams, AuthState } from './oauth'
+export { oauth, requiresLogin, AuthService, HasAuthService, LoginParams } from './oauth'
 
 export { HttpClient, StubbedEndpoints, HasHTTPClient, addHttpClient, addStubHttpClient, retryRequests } from './http'
 export { Resource, AsyncValue, PresentAyncValue, MissingAsyncValue } from './resource'
