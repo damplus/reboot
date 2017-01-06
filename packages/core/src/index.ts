@@ -17,4 +17,4 @@ export { addStore, addReducer, Store, StoreRequest } from './middlewares.redux'
 export { oauth, requiresLogin, IsLoggedIn, AuthService, HasAuthService, LoginParams, AuthState } from './oauth'
 
 export { HttpClient, StubbedEndpoints, HasHTTPClient, addHttpClient, addStubHttpClient, retryRequests } from './http'
-export { Resource, ResourceState, ResourceMutation, applyResourceMutation } from './resource'
+export { Resource, AsyncValue, PresentAyncValue, MissingAsyncValue } from './resource'
