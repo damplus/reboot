@@ -1,10 +1,12 @@
 import * as qs from 'querystring'
 import * as url from 'url'
 import { startsWith } from 'lodash'
+import { Reducer } from 'redux'
 
 import { MountResponse } from './response'
 import { BaseRequest } from './request'
 import { Middleware } from './middleware'
+import { StoreRequest, Store } from './middlewares.redux'
 import { HttpClient, HasHTTPClient } from './http'
 import { Transition, stringifyTransition, requestTransition } from './transition'
 import { log } from './util'
@@ -24,15 +26,23 @@ export interface LoginParams {
   pass: string
 }
 
+export interface LoginResponse {
+	access_token: string;
+	refresh_token: string;
+	token_type: string;
+	expires_in: number;
+}
 
 /** Adds oauth support to an application */
 
-export function oauth(config: AuthOpts): Middleware<BaseRequest & HasHTTPClient, HasAuthService & HasHTTPClient> {
+export function oauth(config: AuthOpts): Middleware<BaseRequest & HasHTTPClient & StoreRequest<{}>, HasAuthService & HasHTTPClient> {
   return async (req, next) => {
     const state = await initialAuthState(req.http, config.validationEndpoint)
+    const store = req.store.addReducer('oauth', authStateReducer(state))
+
     const service = new AuthService({
       http: req.http,
-      state,
+      store,
       config,
       refresh: req.refresh,
       location: {
@@ -76,19 +86,18 @@ export type AuthState
 | { status: 'logged-out' }
 
 export class AuthService {
-  private state: AuthState
-
   private http: HttpClient
   private config: AuthOpts
   private refresh: () => void
   private location: Transition<{}, {}>
+  private store: Store<HasAuthState>
 
-  constructor(opts: { config: AuthOpts, state: AuthState, http: HttpClient, refresh: () => void, location: Transition<{}, {}> }) {
+  constructor(opts: { config: AuthOpts, store: Store<HasAuthState>, http: HttpClient, refresh: () => void, location: Transition<{}, {}> }) {
     if (process.env.NODE_ENV === 'production' && process.env.ALLOW_INSECURE_HTTP_CREDENTIALS) {
       throw new Error('$ALLOW_INSECURE_HTTP_CREDENTIALS is not allowed in production')
     }
 
-    this.state = opts.state
+    this.store = opts.store
     this.http = opts.http
     this.config = opts.config
     this.refresh = opts.refresh
@@ -100,12 +109,12 @@ export class AuthService {
   }
 
   async logOut() {
-    this.status() === 'logged-out'
+    this.store.dispatch<AuthStateAction>({ type: 'auth.logout' })
     this.refresh()
   }
 
   async logIn(credentials: LoginParams) {
-    await this.http(this.config.loginEndpoint, {
+    const response = await this.http(this.config.loginEndpoint, {
       method: 'POST',
       headers: new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' }),
       body: qs.stringify({
@@ -113,10 +122,11 @@ export class AuthService {
         username: credentials.user,
         password: credentials.pass
       }),
-    })
+    }).then<LoginResponse>(r => r.json())
 
     log.trace('Login succeeded')
 
+    this.store.dispatch<AuthStateAction>({ type: 'auth.login', credentials: response })
     requestTransition(this.startPage())
   }
 
@@ -138,7 +148,7 @@ export class AuthService {
       throw new Error('Authenticated urls must be explicitly https')
     }
 
-    const { state } = this
+    const state = this.state()
 
     if (state.status === 'logged-in') {
       log.trace('Making authenticated request to ', address)
@@ -177,8 +187,12 @@ export class AuthService {
     }
   }
 
+  private state() {
+    return this.store.getState().oauth
+  }
+
   private status() {
-    return this.state.status
+    return this.state().status
   }
 }
 
@@ -187,4 +201,28 @@ export class AuthService {
 
 async function initialAuthState(http: HttpClient, validationEndpoint: string): Promise<AuthState> {
   return { status: 'logged-out' }
+}
+
+
+/** State management */
+
+export interface HasAuthState {
+  oauth: AuthState
+}
+
+export type AuthStateAction
+= { type: 'auth.login', credentials: LoginResponse }
+| { type: 'auth.logout'}
+
+export function authStateReducer(initialState: AuthState): Reducer<AuthState> {
+  return function reduceAuthState(prev: AuthState = initialState, action: AuthStateAction | { type: '' }): AuthState {
+    if (action.type === 'auth.login') {
+      return { status: 'logged-in', token: action.credentials.access_token }
+
+    } else if (action.type === 'auth.logout') {
+      return { status: 'logged-out' }
+    }
+
+    return prev
+  }
 }
