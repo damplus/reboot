@@ -7,6 +7,7 @@ import { BaseRequest } from './request'
 import { Middleware } from './middleware'
 import { HttpClient, HasHTTPClient } from './http'
 import { Transition, stringifyTransition, requestTransition } from './transition'
+import { log } from './util'
 
 export interface HasAuthService { auth: AuthService }
 
@@ -56,6 +57,8 @@ export function requiresLogin(): Middleware<HasAuthService, {}> {
       return next({ auth })
 
     } else {
+      log.trace('Redirecting to login page')
+
       return Promise.resolve<MountResponse>({
         state: 'redirect',
         status: 401,
@@ -111,6 +114,9 @@ export class AuthService {
         password: credentials.pass
       }),
     })
+
+    log.trace('Login succeeded')
+
     requestTransition(this.startPage())
   }
 
@@ -135,6 +141,8 @@ export class AuthService {
     const { state } = this
 
     if (state.status === 'logged-in') {
+      log.trace('Making authenticated request to ', address)
+
       const headers = new Headers(opts.headers)
       headers.set('Authorization', 'Bearer ' + state.token)
 

@@ -5,6 +5,7 @@ import * as qs from 'querystring'
 
 import { QueryParams } from './request'
 import { RouteWithParams } from './route'
+import { log } from './util'
 
 export interface Transition<RouteParams, Params extends RouteParams> {
   handler: RouteWithParams<RouteParams> | (() => RouteWithParams<RouteParams>)
@@ -23,6 +24,7 @@ export const transition$ = Stream.create<string>({
 
 export function requestTransition<RouteParams, Params extends RouteParams>(t: Transition<RouteParams, Params> | string) {
   if (transitionListener) {
+    log.trace('Transition requested:', stringifyTransition(t))
     transitionListener.next(stringifyTransition(t))
   }
 }

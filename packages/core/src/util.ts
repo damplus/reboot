@@ -15,3 +15,11 @@ export function toPromise<T>(stream: Stream<T>): Promise<T | undefined> {
 export function toStream<T>(x: Stream<T> | T): Stream<T> {
   return (x instanceof Stream) ? x : Stream.fromArray([x])
 }
+
+const logLevels = {
+  trace: 1
+}
+
+export const log = {
+  trace: (process.env.REBOOT_LOG_LEVEL >= logLevels.trace) ? console.log : () => {}
+}
