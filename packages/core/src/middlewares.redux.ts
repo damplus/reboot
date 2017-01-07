@@ -12,11 +12,14 @@ export interface Store<T> {
   select$<Key extends keyof T>(key: Key): Stream<T[Key]>
 
   addReducer<Key extends string, Shape>(key: Key, r: Reducer<Shape>): Store<T & Record<Key, Shape>>
+  getState(): T
 }
 
 export interface StoreRequest<T> {
   store: Store<T>
 }
+
+declare const __REDUX_DEVTOOLS_EXTENSION__: any
 
 /**
  * Attaches a redux store to the request.
@@ -24,10 +27,16 @@ export interface StoreRequest<T> {
  * This should be done once on the '/' route if you want to use redux to manage
  * application state.
  **/
-export function addStore(createStore?: () => ReduxStore<{}>): Middleware<{}, StoreRequest<{}>> {
+export function addStore(): Middleware<{}, StoreRequest<{}>> {
   return (req, next) => {
+    const reduxStore = defaultCreateStore(() => ({}),
+      (typeof __REDUX_DEVTOOLS_EXTENSION__ !== 'undefined')
+      ? __REDUX_DEVTOOLS_EXTENSION__()
+      : undefined
+    )
+
     let unsubscribe = () => {}
-    const reduxStore = createStore ? createStore() : defaultCreateStore(() => ({}))
+
     const $ = Stream.createWithMemory({
       start: listener => {
         listener.next(reduxStore.getState())
@@ -70,7 +79,10 @@ function wrapStore<T>({ store, reducers, $ }: { store: ReduxStore<T>, reducers: 
       const nextReducers = { ...reducers, [key as any]: fn }
       store.replaceReducer(combineReducers<T>(nextReducers))
 
-      return wrapStore({ store, reducers: nextReducers, $ })
+      return wrapStore({ store, reducers: nextReducers, $ }) as any
+    },
+    getState() {
+      return store.getState()
     }
   }
 }
