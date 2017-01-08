@@ -9,14 +9,14 @@ import {
   BaseRequest,
   MountRender,
   createMatcher,
-  Route,
+  AnyRoute,
   Transition, stringifyTransition, transition$
 } from 'reboot-core'
 
 import { toPromise, popState$ } from './util'
 
 export interface MountParams {
-  routes: Route<BaseRequest>[]
+  routes: AnyRoute[]
   transitions$: Stream<string>
   path: string
   onTitleChange(title: string): void
@@ -24,7 +24,7 @@ export interface MountParams {
   onReplaceLocation(data: any, title: string, url?: string | null): void
 }
 
-export type RouteDeclaration = Route<BaseRequest> | (() => Route<BaseRequest>)
+export type RouteDeclaration = AnyRoute | (() => AnyRoute)
 
 export default function clientMain(routes: RouteDeclaration[]) {
   return Promise.resolve().then(() =>
@@ -48,12 +48,12 @@ export default function clientMain(routes: RouteDeclaration[]) {
   })
 }
 
-export function unpackRouteDeclaration(routeDeclaration: RouteDeclaration): Route<BaseRequest> {
+export function unpackRouteDeclaration(routeDeclaration: RouteDeclaration): AnyRoute {
   return (typeof routeDeclaration === 'function') ? routeDeclaration() : routeDeclaration
 }
 
 export function start(params: MountParams): Promise<React.ReactElement<{}>> {
-  const matcher = createMatcher<Route<BaseRequest>>()
+  const matcher = createMatcher<AnyRoute>()
   params.routes.forEach(r => {
     matcher.add([{ path: r.path, handler: r }])
   })
@@ -72,15 +72,10 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
     }
   }
 
-  const route = matchRoute(params.path)
-  const req: BaseRequest = {
-    environment: 'client',
-    route: unpackRouteDeclaration(route.handler),
-    pathParams: route.params,
-    queryParams: route.queryParams
-  }
+  const location = matchRoute(params.path)
+  const req: BaseRequest = { location }
 
-  return unpackRouteDeclaration(route.handler).middleware(req, terminalNext()).then(response => {
+  return unpackRouteDeclaration(location.handler).apply(req, terminalNext()).then(response => {
     if (response.state === 'render') {
       if (!response.body) {
         throw new Error('No body declared on route')
@@ -101,9 +96,9 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
       )
 
     } else {
-      if (stringifyTransition(response.location) === stringifyTransition(route)) {
+      if (stringifyTransition(response.location) === stringifyTransition(location)) {
         throw new Error(
-          `Encountered recursive redirect (${stringifyTransition(route)} => ${stringifyTransition(response.location)})`
+          `Encountered recursive redirect (${stringifyTransition(location)} => ${stringifyTransition(response.location)})`
         )
       }
       return start(assign({}, params, {
@@ -171,16 +166,13 @@ export class Client extends React.Component<ClientProps, ClientState> {
 
   performTransition(target: Transition<{}, {}>, replaceState?: boolean): Promise<void> {
     const request: BaseRequest = {
-      environment: 'client',
-      route: unpackRouteDeclaration(target.handler),
-      pathParams: target.params,
-      queryParams: target.queryParams
+      location: target
     }
     const transitionID = uniqueId('transition')
     this.transitionID = transitionID
 
     // Apply the route middleware and set up the route
-    return unpackRouteDeclaration(target.handler).middleware(request, terminalNext()).then(response => {
+    return unpackRouteDeclaration(target.handler).apply(request, terminalNext()).then(response => {
       // Guard against transition races
       if (this.transitionID !== transitionID) return Promise.resolve()
 

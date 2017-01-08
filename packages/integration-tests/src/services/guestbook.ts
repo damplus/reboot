@@ -31,7 +31,7 @@ export class GuestbookService {
   }
 
   update(id: number, value: Partial<GuestbookPost>) {
-    this.posts.mutate(String(id), { type: 'patch', value }, () =>
+    this.posts.mutate(String(id), { type: 'patch', deltaValue: value }, () =>
       this.http(`https://jsonplaceholder.typicode.com/posts/${id}`, { method: 'patch' })
     )
   }

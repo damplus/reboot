@@ -3,9 +3,12 @@ import { Stream, Listener } from 'xstream'
 import { size } from 'lodash'
 import * as qs from 'querystring'
 
-import { QueryParams } from './request'
 import { RouteWithParams } from './route'
 import { log } from './util'
+
+export interface QueryParams {
+  [key: string]: string[] | string | undefined
+}
 
 export interface Transition<RouteParams, Params extends RouteParams> {
   handler: RouteWithParams<RouteParams> | (() => RouteWithParams<RouteParams>)

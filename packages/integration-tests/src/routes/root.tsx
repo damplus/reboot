@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { app, renderContainer, Route, transitionProps, BaseRequest } from 'reboot-core'
+import { app, renderContainer, transitionProps, AnyRoute } from 'reboot-core'
 
 import counter from './counter'
 import guestbook from './guestbook'
@@ -7,7 +7,7 @@ import greeter from './greeter'
 
 require('../style.css')
 
-export default (): Route<BaseRequest> => app()
+export default (): AnyRoute => app()
   .use(renderContainer(() => <App />))
   .render(<Home />)
 

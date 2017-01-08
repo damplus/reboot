@@ -1,64 +1,100 @@
-import { assign } from 'lodash'
 import * as path from 'path'
+import { assign } from 'lodash'
 
 import { BaseRequest } from './request'
+import { MountResponse } from './response'
 import { Middleware, compose, noop } from './middleware'
 import { requestProp } from './middlewares.request'
 import { RenderFn, render, renderTitle } from './middlewares.rendering'
+import { Transition } from './transition'
 
-export interface RouteProps<R extends BaseRequest> {
+export interface RouteProps<Input extends BaseRequest, AddedProps> {
   path: string
-  middleware: Middleware<BaseRequest, R>
+  middleware: Middleware<Input, AddedProps>
+  parent: RequestTransformer<Input>
 }
 
-export interface RouteWithParams<P> extends Route<BaseRequest & { pathParams: P }> {}
+export interface RouteWithParams<P> extends Route<BaseRequest & HasParams<P>, {}> {}
 
-export class Route<R extends BaseRequest> implements RouteProps<R> {
-  path: string
-  middleware: Middleware<BaseRequest, R>
+export interface HasParams<P> {
+  location: Transition<P, P>
+}
 
-  constructor(props: RouteProps<R>) {
-    assign(this, props)
+export interface RequestTransformer<Result extends BaseRequest> {
+  apply(req: BaseRequest, cb: (next: Result, parents: BoundRoute[]) => Promise<MountResponse>): Promise<MountResponse>
+}
+
+export class Route<Input extends BaseRequest, AddedProps> implements RequestTransformer<Input & AddedProps> {
+  private props: RouteProps<Input, AddedProps>
+
+  constructor(props: RouteProps<Input, AddedProps>) {
+    this.props = props
   }
 
-  use<R2>(m: Middleware<R, R2>) {
-    return new Route<R & R2>({
+  get path() {
+    return this.props.path
+  }
+
+  use<ExtraProps>(m: Middleware<Input & AddedProps, ExtraProps>) {
+    return new Route<Input, ExtraProps & AddedProps>({
       path: this.path,
-      middleware: compose(this.middleware, m)
+      middleware: compose(this.props.middleware, m),
+      parent: this.props.parent
     })
   }
 
-  add<Key extends string, T>(key: Key, Class: new (props: R) => T): Route<R & Record<Key, T>> {
+  add<Key extends string, T>(key: Key, Class: new (props: Input & AddedProps) => T) {
     return this.use(
-      requestProp(key, (req: R) => new Class(req))
+      requestProp(key, (req: Input & AddedProps) => new Class(req))
     )
   }
 
-  render(element: React.ReactElement<{}> | RenderFn<R, React.ReactElement<{}>>): Route<R> {
+  render(element: React.ReactElement<{}> | RenderFn<Input & AddedProps, React.ReactElement<{}>>) {
     return this.use(
       render(typeof element === 'function' ? element : () => element)
     )
   }
 
-  title(title: string | RenderFn<R, string>): Route<R> {
+  title(title: string | RenderFn<Input & AddedProps, string>) {
     return this.use(
       renderTitle(typeof title === 'function' ? title : () => title)
     )
   }
 
-  subroute(subpath: string): Route<R>
-  subroute<ParamKeys extends string>(subpath: string, ...paramKeys: ParamKeys[]): Route<R & { pathParams: Record<ParamKeys, string> }>
-  subroute(subpath: string): Route<any> {
+  subroute(subpath: string): Route<Input & AddedProps, {}>
+  subroute<ParamKeys extends string>(subpath: string, ...paramKeys: ParamKeys[]): Route<Input & AddedProps & HasParams<Record<ParamKeys, string>>, {}>
+  subroute(subpath: string) {
     return new Route({
       path: path.join(this.path, subpath),
-      middleware: this.middleware
+      middleware: noop(),
+      parent: this
     })
+  }
+
+  apply(startReq: BaseRequest, next: (props: Input & AddedProps, parents: BoundRoute[]) => Promise<MountResponse>): Promise<MountResponse> {
+    return this.props.parent.apply(startReq, (prevReq, parents) =>
+      this.props.middleware(prevReq, addedProps => {
+        const nextReq = assign({}, prevReq, addedProps)
+        return next(nextReq, [...parents, { route: this, request: nextReq }])
+      })
+    )
   }
 }
 
+export interface BoundRoute {
+  route: AnyRoute
+  request: BaseRequest
+}
+
+export type AnyRoute = Route<BaseRequest, {}>
+
 export function app(basePath: string = '') {
-  return new Route({
+  let route = new Route({
     path: basePath,
-    middleware: noop()
+    middleware: noop(),
+    parent: {
+      apply: (req, cb) => cb(req, [])
+    }
   })
+  return route
 }

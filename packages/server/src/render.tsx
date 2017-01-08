@@ -6,14 +6,14 @@ import {
   terminalNext,
   BaseRequest,
   Matcher,
-  Route,
+  AnyRoute,
   stringifyTransition
 } from 'reboot-core'
 
 import { toPromise, toStream } from './util'
 
 export interface MountParams {
-  matcher: Matcher<Route<BaseRequest>>
+  matcher: Matcher<AnyRoute>
   pathname: string
   query: string
 }
@@ -26,19 +26,14 @@ export interface RenderOutput {
 }
 
 export function render(params: MountParams): Promise<RenderOutput> {
-  const [route] = params.matcher.recognize(params.pathname)
-  if (!route) {
+  const [location] = params.matcher.recognize(params.pathname)
+  if (!location) {
     return Promise.reject(new Error('Failed to match {params.path}'))
   }
 
-  const req: BaseRequest = {
-    environment: 'server',
-    route: route.handler,
-    pathParams: route.params,
-    queryParams: qs.parse(params.query)
-  }
+  const req: BaseRequest = { location }
 
-  return route.handler.middleware(req, terminalNext()).then((response): RenderOutput | Promise<RenderOutput> => {
+  return location.handler.apply(req, terminalNext()).then((response): RenderOutput | Promise<RenderOutput> => {
     if (response.state === 'render') {
       return toPromise(
         Stream.combine(
@@ -53,16 +48,16 @@ export function render(params: MountParams): Promise<RenderOutput> {
       )
 
     } else {
-      const location = stringifyTransition(response.location)
-      if (location === stringifyTransition({ handler: route.handler, params: route.params, queryParams: qs.parse(params.query) })) {
+      const address = stringifyTransition(response.location)
+      if (address === stringifyTransition({ handler: location.handler, params: location.params, queryParams: qs.parse(params.query) })) {
         throw new Error(
-          `Encountered recursive redirect (${stringifyTransition(route)} => ${stringifyTransition(response.location)})`
+          `Encountered recursive redirect (${stringifyTransition(address)} => ${stringifyTransition(response.location)})`
         )
       }
 
       return {
         status: response.status || 301,
-        location
+        location: address
       }
     }
   })

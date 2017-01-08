@@ -54,6 +54,7 @@ export abstract class AsyncValue<T> {
   abstract get error(): Error | undefined
   abstract get value(): T | undefined
   abstract get optimisticValue(): T | undefined
+  abstract get mutationType(): MutationType | undefined
 
   abstract flatMap<U>(fn: (x: T) => AsyncValue<U>): AsyncValue<U>
   abstract withDefault<U>(defaultVal: U | ((x: MissingAsyncValue) => U)): PresentAyncValue<T | U>
@@ -63,6 +64,8 @@ export abstract class AsyncValue<T> {
     return this.withDefault(defaultVal).value
   }
 }
+
+export type MutationType = 'updating' | 'deleting'
 
 export class PresentAyncValue<T> extends AsyncValue<T> {
   private state: ResourceStateLoaded<T>
@@ -77,6 +80,21 @@ export class PresentAyncValue<T> extends AsyncValue<T> {
   get error() { return undefined }
   get value() { return this.state.value }
   get optimisticValue() { return applyResourceMutation(this.state.value, this.state.mutation) }
+
+  get mutationType(): MutationType | undefined {
+    const { mutation } = this.state
+
+    if (mutation) {
+      if (mutation.type === 'delete') {
+        return 'deleting'
+
+      } else {
+        return 'updating'
+      }
+    }
+
+    return undefined
+  }
 
   map<U>(fn: (x: T) => U): AsyncValue<U> {
     // [bug]: Mutation is discarded as it may have a different type to value.
@@ -111,6 +129,7 @@ export class MissingAsyncValue extends AsyncValue<never> {
   get error() { return (this.state.status === 'failed') && this.state.error || undefined }
   get value() { return undefined }
   get optimisticValue() { return undefined }
+  get mutationType() { return undefined }
 
   flatMap<U>(fn: () => AsyncValue<U>): AsyncValue<U> {
     return this

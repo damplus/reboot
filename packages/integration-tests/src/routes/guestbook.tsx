@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { addStore, addHttpClient, ResourceMutation, applyResourceMutation } from 'reboot-core'
+import { addStore, addHttpClient, MutationType } from 'reboot-core'
 
 import { GuestbookService, GuestbookPost } from '../services/guestbook'
 import root from './root'
@@ -12,7 +12,6 @@ export default () => root()
   .add('guestbook', GuestbookService)
   .render(renderGuestbook)
 
-
 interface GuestbookViewProps {
   guestbook: GuestbookService
 }
@@ -23,14 +22,15 @@ export function renderGuestbook({ guestbook }: GuestbookViewProps) {
       <h2>Posts</h2>
       {
         posts.map(post => {
-          if (post.status === 'loaded') {
+          const value = post.optimisticValue
+          if (value) {
             return (
               <GuestbookPostView
-                key={post.value.id}
-                value={post.value}
-                onChange={x => guestbook.update(post.value.id, x)}
-                onDelete={() => guestbook.delete(post.value.id)}
-                mutation={post.mutation}
+                key={value.id}
+                value={value}
+                onChange={x => guestbook.update(value.id, x)}
+                onDelete={() => guestbook.delete(value.id)}
+                mutation={post.mutationType}
               />
             )
 
@@ -47,7 +47,7 @@ interface GuestbookPostViewProps {
   value: GuestbookPost
   onChange(x: Partial<GuestbookPost>): void
   onDelete(): void
-  mutation?: ResourceMutation<GuestbookPost>
+  mutation?: MutationType
 }
 
 interface GuestbookPostViewState {
@@ -64,7 +64,7 @@ export class GuestbookPostView extends React.Component<GuestbookPostViewProps, G
       <div>
         <h3>{value.title}</h3>
         <textarea
-          value={bodyEdit || applyResourceMutation(value, mutation).body}
+          value={bodyEdit || value.body}
           onChange={e => this.setState({ bodyEdit: e.currentTarget.value })}
           onBlur={() => {
             onChange({ body: bodyEdit })
@@ -72,9 +72,7 @@ export class GuestbookPostView extends React.Component<GuestbookPostViewProps, G
           }}
         />
         <button onClick={onDelete}>Delete</button>
-        {
-          mutation && `${mutation.type}....`
-        }
+        {mutation}
         <hr />
       </div>
     )

@@ -6,4 +6,4 @@ import root from './root'
 export default () => root()
   .subroute('/greet/:name', 'name')
   .title('Greeting')
-  .render(({ pathParams }) => <div>Hello, {startCase(pathParams.name)}!</div>)
+  .render(props => <div>Hello, {startCase(props.location.params.name)}!</div>)

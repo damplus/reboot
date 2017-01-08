@@ -44,12 +44,7 @@ export function oauth(config: AuthOpts): Middleware<BaseRequest & HasHTTPClient 
       http: req.http,
       store,
       config,
-      refresh: req.refresh,
-      location: {
-        handler: req.route,
-        params: req.pathParams,
-        queryParams: req.queryParams
-      }
+      location: req.location
     })
 
     return next({ auth: service, http: service.authenicatedRequest.bind(service) })
@@ -88,11 +83,10 @@ export type AuthState
 export class AuthService {
   private http: HttpClient
   private config: AuthOpts
-  private refresh: () => void
   private location: Transition<{}, {}>
   private store: Store<HasAuthState>
 
-  constructor(opts: { config: AuthOpts, store: Store<HasAuthState>, http: HttpClient, refresh: () => void, location: Transition<{}, {}> }) {
+  constructor(opts: { config: AuthOpts, store: Store<HasAuthState>, http: HttpClient, location: Transition<{}, {}> }) {
     if (process.env.NODE_ENV === 'production' && process.env.ALLOW_INSECURE_HTTP_CREDENTIALS) {
       throw new Error('$ALLOW_INSECURE_HTTP_CREDENTIALS is not allowed in production')
     }
@@ -100,7 +94,6 @@ export class AuthService {
     this.store = opts.store
     this.http = opts.http
     this.config = opts.config
-    this.refresh = opts.refresh
     this.location = opts.location
   }
 
@@ -110,7 +103,6 @@ export class AuthService {
 
   async logOut() {
     this.store.dispatch<AuthStateAction>({ type: 'auth.logout' })
-    this.refresh()
   }
 
   async logIn(credentials: LoginParams) {
