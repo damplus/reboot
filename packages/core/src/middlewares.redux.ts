@@ -21,6 +21,13 @@ export interface StoreRequest<T> {
 
 declare const __REDUX_DEVTOOLS_EXTENSION__: any
 
+// [todo] - Move this onto the request object when route diffing implemented
+const reduxStore = defaultCreateStore(() => ({}),
+  (typeof __REDUX_DEVTOOLS_EXTENSION__ !== 'undefined')
+  ? __REDUX_DEVTOOLS_EXTENSION__()
+  : undefined
+)
+
 /**
  * Attaches a redux store to the request.
  *
@@ -29,12 +36,6 @@ declare const __REDUX_DEVTOOLS_EXTENSION__: any
  **/
 export function addStore(): Middleware<{}, StoreRequest<{}>> {
   return (req, next) => {
-    const reduxStore = defaultCreateStore(() => ({}),
-      (typeof __REDUX_DEVTOOLS_EXTENSION__ !== 'undefined')
-      ? __REDUX_DEVTOOLS_EXTENSION__()
-      : undefined
-    )
-
     let unsubscribe = () => {}
 
     const $ = Stream.createWithMemory({
@@ -57,13 +58,6 @@ export function addStore(): Middleware<{}, StoreRequest<{}>> {
   }
 }
 
-/**
- * Attaches a reducer to the redux store. The reducer will mange state with the provided key
- * (as if it were added to the store via `combineReducers()`).
- *
- * State managed by this reducer will be scoped to the route it is attached to. When the route
- * is unmounted, the state will be discarded.
- **/
 export function addReducer<Key extends string, Shape>(key: Key, reducer: Reducer<Shape>): Middleware<StoreRequest<{}>, StoreRequest<Record<Key, Shape>>> {
   return ({ store }, next) => next({
     store: store.addReducer(key, reducer)
@@ -71,20 +65,23 @@ export function addReducer<Key extends string, Shape>(key: Key, reducer: Reducer
 }
 
 function wrapStore<T>({ store, reducers, $ }: { store: ReduxStore<T>, reducers: ReducersMapObject, $: Stream<T> }): Store<T> {
-  return {
+  const reducerMap = reducers as any
+  const wrapper = {
     dispatch: store.dispatch,
     bind: <P>(ac: ActionCreator<P>) => (p: P) => { store.dispatch(ac(p)) },
     select$: <C>(fn: (state: T) => C) => $.map(fn).compose(dropRepeats()),
     addReducer: <Key extends string, Shape>(key: Key, fn: Reducer<Shape>): Store<T & Record<Key, Shape>> => {
-      const nextReducers = { ...reducers, [key as any]: fn }
-      store.replaceReducer(combineReducers<T>(nextReducers))
+      reducerMap[key] = fn
+      store.replaceReducer(combineReducers<T>(reducerMap))
 
-      return wrapStore({ store, reducers: nextReducers, $ }) as any
+      return wrapper as any
     },
     getState() {
       return store.getState()
     }
   }
+
+  return wrapper
 }
 
 export interface ActionCreator<P> {
