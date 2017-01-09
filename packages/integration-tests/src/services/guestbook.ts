@@ -1,5 +1,5 @@
 import { keyBy } from 'lodash'
-import { Resource, HasHTTPClient, HttpClient } from 'reboot-core'
+import { Resource, AsyncValue, ResourceQuery, HasHTTPClient, HttpClient } from 'reboot-core'
 
 export interface GuestbookPost {
 	userId: number;
@@ -11,23 +11,30 @@ export interface GuestbookPost {
 export class GuestbookService {
   private http: HttpClient
   private posts: Resource<GuestbookPost>
+  private query: ResourceQuery<{}, GuestbookPost>
 
   constructor(opts: HasHTTPClient & { store: any }) {
     this.http = opts.http
-    this.posts = new Resource({ key: 'guestbook', store: opts.store }) as any
+    this.posts = new Resource({
+      key: 'guestbook',
+      store: opts.store,
+      fetch: id => (this.http('https://jsonplaceholder.typicode.com/posts')
+        .then<GuestbookPost>(r => r.json())
+      )
+    })
+    this.query = this.posts.query('all', async (_, update) => {
+      const posts = await this.http('https://jsonplaceholder.typicode.com/posts').then<GuestbookPost[]>(r => r.json())
+      update(keyBy(posts, 'id'))
 
-    this.fetch()
+      return posts.map(x => String(x.id))
+    })
+    this.query.setQuery('all', {})
   }
 
   get allPosts() {
-    return this.posts.$()
-  }
-
-  fetch() {
-    this.posts.fetchMany([], async () => {
-      const posts = await this.http('https://jsonplaceholder.typicode.com/posts').then<GuestbookPost[]>(r => r.json())
-      return keyBy(posts, 'id')
-    })
+    return this.query.$('all')
+      .compose(AsyncValue.waitFor)
+      .flatten()
   }
 
   update(id: number, value: Partial<GuestbookPost>) {

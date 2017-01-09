@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 
 import * as rb from '../src'
-import { applyMiddleware, collect, waitFor } from './helpers'
+import { applyMiddleware, collect } from './helpers'
 
 interface Greeting {
   salutation: string
@@ -12,65 +12,35 @@ const anError = new Error('Boo')
 
 describe('resource middleware', () => {
   context('in initial state', () => {
-    async function setup() {
-      const { request } = await applyMiddleware(addResource('fooResource'))
+    async function setup(fn: () => Promise<Greeting>) {
+      const { request } = await applyMiddleware(addResource('fooResource', fn))
       return request!
     }
 
-    describe('fetch', () => {
-      it('should load successfuly fetched resource', async () => {
-        const request = await setup()
+    it('should load successfuly fetched resource', async () => {
+      const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
+      const events = await collect(request!.fooResource.$('foo').take(2))
 
-        request!.fooResource.fetch('foo', () => Promise.resolve({ salutation: 'hello', object: 'world' }))
-        const events = await collect(request!.fooResource.$('foo').take(2))
-
-        expect(events).to.eql([
-          new rb.MissingAsyncValue({ status: 'loading' }),
-          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
-        ])
-      })
-
-      it('should error unsuccessfuly fetched resource', async () => {
-        const request = await setup()
-
-        request!.fooResource.fetch('foo', () => Promise.reject(anError))
-        const events = await collect(request!.fooResource.$('foo').take(2))
-
-        expect(events).to.eql([
-          new rb.MissingAsyncValue({ status: 'loading' }),
-          new rb.MissingAsyncValue({ status: 'failed', error: anError }),
-        ])
-      })
+      expect(events).to.eql([
+        new rb.MissingAsyncValue({ status: 'loading' }),
+        new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
+      ])
     })
-  })
 
-  context('after fetch', () => {
-    async function setup() {
-      const { request } = await applyMiddleware(addResource('fooResource'))
-      request!.fooResource.fetch('foo', () => Promise.resolve({ salutation: 'hello', object: 'world' }))
+    it('should error unsuccessfuly fetched resource', async () => {
+      const request = await setup(() => Promise.reject(anError))
+      const events = await collect(request!.fooResource.$('foo').take(2))
 
-      await waitFor(request!.fooResource.$('foo'), x => Boolean(x.value))
-
-      return request!
-    }
-
-    describe('fetch', () => {
-      it('should reload resource', async () => {
-        const request = await setup()
-
-        request.fooResource.fetch('foo', () => Promise.resolve({ salutation: 'hello', object: 'friend' }))
-        const events = await collect(request!.fooResource.$('foo').take(2))
-
-        expect(events).to.eql([
-          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, reloading: true }),
-          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'friend' } }),
-        ])
-      })
+      expect(events).to.eql([
+        new rb.MissingAsyncValue({ status: 'loading' }),
+        new rb.MissingAsyncValue({ status: 'failed', error: anError }),
+      ])
     })
 
     describe('put', () => {
       it('should update resource', async () => {
-        const request = await setup()
+        const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
+        await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'put', value: { salutation: 'hello', object: 'friend' } }, () => Promise.resolve())
         const events = await collect(request!.fooResource.$('foo').take(2))
@@ -81,8 +51,9 @@ describe('resource middleware', () => {
         ])
       })
 
-      it('should error unsuccessfuly updated resource', async () => {
-        const request = await setup()
+      it('should revert unsuccessfuly updated resource', async () => {
+        const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
+        await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'put', value: { salutation: 'hello', object: 'friend' } }, () => Promise.reject(anError))
         const events = await collect(request!.fooResource.$('foo').take(2))
@@ -96,7 +67,8 @@ describe('resource middleware', () => {
 
     describe('patch', () => {
       it('should update resource', async () => {
-        const request = await setup()
+        const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
+        await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'patch', deltaValue: { object: 'friend' } }, () => Promise.resolve())
         const events = await collect(request!.fooResource.$('foo').take(2))
@@ -108,7 +80,8 @@ describe('resource middleware', () => {
       })
 
       it('should error unsuccessfuly updated resource', async () => {
-        const request = await setup()
+        const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
+        await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'patch', deltaValue: { object: 'friend' } }, () => Promise.reject(anError))
         const events = await collect(request!.fooResource.$('foo').take(2))
@@ -122,7 +95,8 @@ describe('resource middleware', () => {
 
     describe('delete', () => {
       it('should delete resource', async () => {
-        const request = await setup()
+        const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
+        await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'delete' }, () => Promise.resolve())
         const events = await collect(request!.fooResource.$('foo').take(2))
@@ -133,8 +107,9 @@ describe('resource middleware', () => {
         ])
       })
 
-      it('should error unsuccessfuly deleted resource', async () => {
-        const request = await setup()
+      it('should revert unsuccessfuly deleted resource', async () => {
+        const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
+        await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'delete' }, () => Promise.reject(anError))
         const events = await collect(request!.fooResource.$('foo').take(2))
@@ -148,9 +123,9 @@ describe('resource middleware', () => {
   })
 })
 
-function addResource<Key extends string>(key: Key): rb.Middleware<{}, Record<Key, rb.Resource<Greeting>>> {
+function addResource<Key extends string>(key: Key, fetch: (id: string) => Promise<Greeting>): rb.Middleware<{}, Record<Key, rb.Resource<Greeting>>> {
   return rb.composeMiddleware(
     rb.createStoreMiddleware(),
-    rb.requestProp(key, ({ store }) => new rb.Resource({ key, store })),
+    rb.requestProp(key, ({ store }) => new rb.Resource({ key, store, fetch })),
   )
 }

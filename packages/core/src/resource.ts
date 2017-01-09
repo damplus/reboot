@@ -88,14 +88,14 @@ export class Resource<T> {
     })
   }
 
-  private fetch(key: string, force: boolean): void {
-    if (this.state()[key] && !force) {
-      return
+  fetch(key: string, reload: boolean = true): Promise<void> {
+    if (this.state()[key] && !reload) {
+      return Promise.resolve()
     }
 
     this.store.dispatch<ResourceAction>({ type: 'http:fetch:start', resourceKey: this.key, keys: [key] })
 
-    Promise.resolve(key).then(this.fetchImpl).then(
+    return Promise.resolve(key).then(this.fetchImpl).then(
       (payload) => {
         this.store.dispatch<ResourceAction>({ type: 'http:fetch:complete', resourceKey: this.key, payload: { [key]: payload } })
       },
