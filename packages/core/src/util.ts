@@ -21,5 +21,9 @@ const logLevels = {
 }
 
 export const log = {
-  trace: (process.env.REBOOT_LOG_LEVEL >= logLevels.trace) ? console.log : () => {}
+  trace: (process.env.REBOOT_LOG_LEVEL >= logLevels.trace) ? logger : () => {}
+}
+
+function logger(...params: any[]) {
+  console.log('[reboot.core]', ...params)
 }
