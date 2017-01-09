@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+
 import * as rb from '../src'
 import { applyMiddleware, collect, waitFor } from './helpers'
 
@@ -24,8 +25,8 @@ describe('resource middleware', () => {
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loading' },
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' } },
+          new rb.MissingAsyncValue({ status: 'loading' }),
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
         ])
       })
 
@@ -36,8 +37,8 @@ describe('resource middleware', () => {
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loading' },
-          { status: 'failed', error: anError },
+          new rb.MissingAsyncValue({ status: 'loading' }),
+          new rb.MissingAsyncValue({ status: 'failed', error: anError }),
         ])
       })
     })
@@ -48,7 +49,7 @@ describe('resource middleware', () => {
       const { request } = await applyMiddleware(addResource('fooResource'))
       request!.fooResource.fetch('foo', () => Promise.resolve({ salutation: 'hello', object: 'world' }))
 
-      await waitFor(request!.fooResource.$('foo'), x => Boolean(x && x.status === 'loaded'))
+      await waitFor(request!.fooResource.$('foo'), x => Boolean(x.value))
 
       return request!
     }
@@ -61,20 +62,8 @@ describe('resource middleware', () => {
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, reloading: true },
-          { status: 'loaded', value: { salutation: 'hello', object: 'friend' } },
-        ])
-      })
-
-      it('should error unsuccessfuly fetched resource', async () => {
-        const request = await setup()
-
-        request.fooResource.fetch('foo', () => Promise.reject(anError))
-        const events = await collect(request!.fooResource.$('foo').take(2))
-
-        expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, reloading: true },
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, error: anError },
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, reloading: true }),
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'friend' } }),
         ])
       })
     })
@@ -87,8 +76,8 @@ describe('resource middleware', () => {
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'put', value: { salutation: 'hello', object: 'friend' } } },
-          { status: 'loaded', value: { salutation: 'hello', object: 'friend' } },
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'put', value: { salutation: 'hello', object: 'friend' } } }),
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'friend' } }),
         ])
       })
 
@@ -99,8 +88,8 @@ describe('resource middleware', () => {
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'put', value: { salutation: 'hello', object: 'friend' } } },
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' } },
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'put', value: { salutation: 'hello', object: 'friend' } } }),
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
         ])
       })
     })
@@ -109,24 +98,24 @@ describe('resource middleware', () => {
       it('should update resource', async () => {
         const request = await setup()
 
-        request.fooResource.mutate('foo', { type: 'patch', value: { object: 'friend' } }, () => Promise.resolve())
+        request.fooResource.mutate('foo', { type: 'patch', deltaValue: { object: 'friend' } }, () => Promise.resolve())
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'patch', value: { object: 'friend' } } },
-          { status: 'loaded', value: { salutation: 'hello', object: 'friend' } },
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'patch', deltaValue: { object: 'friend' } } }),
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'friend' } }),
         ])
       })
 
       it('should error unsuccessfuly updated resource', async () => {
         const request = await setup()
 
-        request.fooResource.mutate('foo', { type: 'patch', value: { object: 'friend' } }, () => Promise.reject(anError))
+        request.fooResource.mutate('foo', { type: 'patch', deltaValue: { object: 'friend' } }, () => Promise.reject(anError))
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'patch', value: { object: 'friend' } } },
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' } },
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'patch', deltaValue: { object: 'friend' } } }),
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
         ])
       })
     })
@@ -139,8 +128,8 @@ describe('resource middleware', () => {
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'delete' } },
-          { status: 'deleted' },
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'delete' } }),
+          new rb.MissingAsyncValue({ status: 'deleted' }),
         ])
       })
 
@@ -151,8 +140,8 @@ describe('resource middleware', () => {
         const events = await collect(request!.fooResource.$('foo').take(2))
 
         expect(events).to.eql([
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'delete' } },
-          { status: 'loaded', value: { salutation: 'hello', object: 'world' } },
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'delete' } }),
+          new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
         ])
       })
     })
@@ -161,7 +150,7 @@ describe('resource middleware', () => {
 
 function addResource<Key extends string>(key: Key): rb.Middleware<{}, Record<Key, rb.Resource<Greeting>>> {
   return rb.composeMiddleware(
-    rb.addStore(),
+    rb.createStoreMiddleware(),
     rb.requestProp(key, ({ store }) => new rb.Resource({ key, store })),
   )
 }

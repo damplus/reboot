@@ -1,6 +1,7 @@
 import { createStore as defaultCreateStore, combineReducers, Action, Reducer, ReducersMapObject, Store as ReduxStore } from 'redux'
 import { Stream } from 'xstream'
 import dropRepeats from 'xstream/extra/dropRepeats'
+import { memoize } from 'lodash'
 
 import { Middleware } from './middleware'
 
@@ -21,20 +22,22 @@ export interface StoreRequest<T> {
 
 declare const __REDUX_DEVTOOLS_EXTENSION__: any
 
-// [todo] - Move this onto the request object when route diffing implemented
-const reduxStore = defaultCreateStore(() => ({}),
-  (typeof __REDUX_DEVTOOLS_EXTENSION__ !== 'undefined')
-  ? __REDUX_DEVTOOLS_EXTENSION__()
-  : undefined
-)
-
 /**
  * Attaches a redux store to the request.
  *
  * This should be done once on the '/' route if you want to use redux to manage
  * application state.
  **/
-export function addStore(): Middleware<{}, StoreRequest<{}>> {
+export const addStore: (() => Middleware<{}, StoreRequest<{}>>) = memoize(createStoreMiddleware)
+
+
+export function createStoreMiddleware(): Middleware<{}, StoreRequest<{}>> {
+  const reduxStore = defaultCreateStore(() => ({}),
+    (typeof __REDUX_DEVTOOLS_EXTENSION__ !== 'undefined')
+    ? __REDUX_DEVTOOLS_EXTENSION__()
+    : undefined
+  )
+
   return (req, next) => {
     let unsubscribe = () => {}
 
