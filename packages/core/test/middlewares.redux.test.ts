@@ -20,11 +20,11 @@ describe('redux middleware', () => {
     ))
 
     const listener = new StreamCollector<number>()
-    request!.store.select$(x => x.counter).subscribe(listener)
+    request!.store.select$((x: { counter: number }) => x.counter).subscribe(listener)
 
     request!.store.dispatch({ type: 'increment' })
     expect(listener.nexts).to.eql([0, 1])
 
-    request!.store.select$(x => x.counter).removeListener(listener)
+    request!.store.select$((x: { counter: number }) => x.counter).removeListener(listener)
   })
 })

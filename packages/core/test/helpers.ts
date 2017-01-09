@@ -1,13 +1,20 @@
 import { Listener, Stream } from 'xstream'
+
 import * as rb from '../src'
 import { toPromise } from '../src/util'
 
 export function createTestRequest(): rb.BaseRequest {
   return {
-    environment: 'client',
-    pathParams: {},
-    queryParams: {},
-    route: new rb.Route({ middleware: rb.noopMiddleware(), path: '/' })
+    location: {
+      handler: new rb.Route({
+        middleware: rb.noopMiddleware(),
+        path: '/',
+        parent: {
+          apply: rb.noopMiddleware()
+        }
+      }),
+      params: {}
+    }
   }
 }
 
