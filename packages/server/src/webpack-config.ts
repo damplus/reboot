@@ -60,18 +60,16 @@ export function webpackConfig(opts: WebpackOpts): {} {
         },
         {
           test: /\.s[ac]ss$/,
-          loader: ExtractTextPlugin.extract('style', [
+          loader: extract(opts.extractStyles, 'style', [
             'css?' + ['localIdentName=[local]__[hash:base64:4]', 'modules', 'importLoaders=1', 'sourceMap'].join('&'),
             'postcss',
             'sass'
-          ].join('!'))
+          ])
         },
         {
           test: /\.css$/,
-          loader: (
-            opts.extractStyles
-            ? ExtractTextPlugin.extract('css!postcss')
-            : 'style!css!postcss'
+          loader: extract(opts.extractStyles, 'style',
+            ['style', 'css', 'postcss']
           )
         },
         {
@@ -174,4 +172,12 @@ function shouldExternalise(context: string, req: string, cb: (err?: {}, result?:
 
 function conditional(condition: boolean, values: any[]): any[] {
   return condition ? values : []
+}
+
+function extract(active: boolean, base: string, loaders: string[]) {
+  if (active) {
+    return ExtractTextPlugin.extract(base, loaders.join('!'))
+  } else {
+    return [base, ...loaders].join('!')
+  }
 }

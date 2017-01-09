@@ -6,6 +6,7 @@ import guestbook from './guestbook'
 import greeter from './greeter'
 
 require('../style.css')
+require('../style.scss')
 
 export default (): AnyRoute => app()
   .use(renderContainer(() => <App />))
