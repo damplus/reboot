@@ -145,7 +145,7 @@ export class AuthService {
     if (state.status === 'logged-in') {
       log.trace('Making authenticated request to ', address)
 
-      const headers = new Headers(opts.headers)
+      const headers = new Headers(opts.headers || {})
       headers.set('Authorization', 'Bearer ' + state.token)
 
       return this.http(address, {
