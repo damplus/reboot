@@ -34,9 +34,9 @@ export function compose<
   R2,
   R3
 >
-(lhs: Middleware<R1, R2>, rhs: Middleware<R2, R3>): Middleware<R1, R3> {
+(lhs: Middleware<R1, R2>, rhs: Middleware<R2, R3>): Middleware<R1, R2 & R3> {
   return (req1, next) => (
-    lhs(req1, req2 => rhs(assign({}, req1, req2), next))
+    lhs(req1, req2 => rhs(assign({}, req1, req2), req3 => next(assign({}, req1, req2, req3))))
   )
 }
 
