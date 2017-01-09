@@ -8,6 +8,8 @@ export default function main(opts: { production: boolean, buildDir?: string }) {
     const server = express()
 
     if (opts.production) {
+      if (!opts.buildDir) throw new Error('opts.buildDir is required')
+
       server.use(express.static(path.join(opts.buildDir, 'public')))
       server.use(renderMiddleware(path.join(opts.buildDir, 'server')))
 
