@@ -1,8 +1,8 @@
 import { Stream } from 'xstream'
-import { assign, values } from 'lodash'
+import { assign } from 'lodash'
 
 import { Store } from './middlewares.redux'
-import { AsyncValue, MissingAsyncValue, PresentAyncValue } from './async-value'
+import { AsyncValue, AsyncValueStream, AsyncListStream, MissingAsyncValue, PresentAyncValue } from './async-value'
 
 export type ResourceMutation<T>
 = { type: 'put', value: T }
@@ -23,62 +23,35 @@ export function resourceValue<T>(s?: ResourceState<T>): AsyncValue<T> {
 export class Resource<T> {
   private store: Store<{ [key: string]: ResourceStateMap }>
   private key: string
+  private fetchImpl: (x: string) => Promise<T>
 
-  constructor(opts: { key: string, store: Store<{}> }) {
+  constructor(opts: { key: string, store: Store<{}>, fetch: (x: string) => Promise<T> }) {
     this.store = opts.store.addReducer(opts.key, httpResourceReducer(opts.key))
     this.key = opts.key
+    this.fetchImpl = opts.fetch
   }
 
-  $(): Stream<AsyncValue<T>[]>
-  $(predicate: (x: AsyncValue<T>) => boolean): Stream<AsyncValue<T>[]>
-  $(key: string): Stream<AsyncValue<T>>
+  $(keys: string[]): AsyncListStream<T>
+  $(key: string): AsyncValueStream<T>
 
-  $(selector?: string | ((x: AsyncValue<{}>) => boolean)): Stream<any> {
-    if (typeof selector === 'function') {
+  $(selector: string[] | string): Stream<any> {
+    if (typeof selector === 'string') {
+      this.fetch(selector, false)
+
       return this.store.select$(state => {
-        const resourceState = state[this.key]
-        return resourceState && values(resourceState)
-          .map(resourceValue)
-          .filter(x => x && selector(x)) || []
-      })
-
-    } else if (typeof selector === 'string') {
-       return this.store.select$(state => {
-        const resourceState = state[this.key]
-        return resourceState && resourceValue(resourceState[selector] || undefined)
-      })
+      const resourceState = state[this.key]
+      return resourceState && resourceValue(resourceState[selector] || undefined)
+    })
 
     } else {
-       return this.store.select$(state => {
+      selector.forEach(s => this.fetch(s, false))
+
+      return this.store.select$(state => {
         const resourceState = state[this.key]
-        return resourceState && values(resourceState).map(resourceValue).filter(x => x) || []
+        return resourceState && selector.map(k => resourceState[k])
+          .map(resourceValue)
       })
     }
-  }
-
-  fetch(key: string, fetchImpl: () => Promise<T>): void {
-    return this.fetchMany([key], () => fetchImpl().then(value => ({ [key]: value })))
-  }
-
-  fetchMany(keys: string[], fetchImpl: () => Promise<{ [key: string]: T }>): void {
-    keys = keys.filter(k => {
-      const state = this.store.getState()[this.key][k]
-      return !(state && state.status === 'loading')
-    })
-    if (keys.length === 0) {
-      return
-    }
-
-    this.store.dispatch<ResourceAction>({ type: 'http:fetch:start', resourceKey: this.key, keys })
-
-    Promise.resolve().then(fetchImpl).then(
-      (payload) => {
-        this.store.dispatch<ResourceAction>({ type: 'http:fetch:complete', resourceKey: this.key, payload })
-      },
-      (error) => {
-        this.store.dispatch<ResourceAction>({ type: 'http:fetch:failed', resourceKey: this.key, keys, error })
-      }
-    )
   }
 
   mutate(key: string, mutation: ResourceMutation<T>, effect: () => Promise<any>): void {
@@ -96,6 +69,98 @@ export class Resource<T> {
         this.store.dispatch<ResourceAction>({ type: 'http:mutation:failed', resourceKey: this.key, keys: Object.keys(mutations), error })
       }
     )
+  }
+
+  query<Q>(key: string, queryHandler: (q: Q, update: (values: { [key: string]: T }) => void) => Promise<string[]>): ResourceQuery<Q, T> {
+    return new ResourceQuery({
+      resource: this,
+      key: this.key + ':query:' + key,
+      store: this.store,
+      queryHandler: (q: Q) => (
+        queryHandler(q, payload => {
+          this.store.dispatch<ResourceAction>({
+            type: 'http:fetch:complete',
+            resourceKey: this.key,
+            payload
+          })
+        })
+      )
+    })
+  }
+
+  private fetch(key: string, force: boolean): void {
+    if (this.state()[key] && !force) {
+      return
+    }
+
+    this.store.dispatch<ResourceAction>({ type: 'http:fetch:start', resourceKey: this.key, keys: [key] })
+
+    Promise.resolve(key).then(this.fetchImpl).then(
+      (payload) => {
+        this.store.dispatch<ResourceAction>({ type: 'http:fetch:complete', resourceKey: this.key, payload: { [key]: payload } })
+      },
+      (error) => {
+        this.store.dispatch<ResourceAction>({ type: 'http:fetch:failed', resourceKey: this.key, keys: [key], error })
+      }
+    )
+  }
+
+  private state() {
+    return this.store.getState()[this.key]
+  }
+}
+
+
+export interface ResourceQueryProps<Q, T> {
+  resource: Resource<T>
+  key: string
+  store: Store<{}>
+  queryHandler: (q: Q) => Promise<string[]>
+}
+
+export class ResourceQuery<Q, T> {
+  private key: string
+  private store: Store<{ [key: string]: ResourceStateMap }>
+  private resource: Resource<T>
+  private queryHandler: (q: Q) => Promise<string[]>
+
+  constructor(opts: ResourceQueryProps<Q, T>) {
+    this.store = opts.store.addReducer(opts.key, httpResourceReducer(opts.key))
+    this.key = opts.key
+    this.resource = opts.resource
+    this.queryHandler = opts.queryHandler
+  }
+
+  $(key: string): AsyncValueStream<AsyncListStream<T>> {
+    return this.store.select$((state): AsyncValue<AsyncListStream<T>> => {
+      const resourceState = this.state()
+      const resultState = resourceState[key] as ResourceState<string[]>
+
+      if (resultState && resultState.status === 'loaded') {
+        const results = this.resource.$(resultState.value)
+        return AsyncValue.coerceFrom<AsyncListStream<T>>(results)
+
+      } else {
+        return new MissingAsyncValue(resultState)
+      }
+    })
+  }
+
+  async setQuery(key: string, q: Q) {
+    this.store.dispatch<ResourceAction>({ type: 'http:fetch:start', resourceKey: this.key, keys: [key] })
+
+    Promise.resolve(q).then(this.queryHandler).then(
+      (payload) => {
+        this.store.dispatch<ResourceAction>({ type: 'http:fetch:complete', resourceKey: this.key, payload: { [key]: payload } })
+      },
+      (error) => {
+        this.store.dispatch<ResourceAction>({ type: 'http:fetch:failed', resourceKey: this.key, keys: [key], error })
+      }
+    )
+  }
+
+  private state() {
+    return this.store.getState()[this.key]
   }
 }
 

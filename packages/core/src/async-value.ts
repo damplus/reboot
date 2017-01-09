@@ -8,6 +8,9 @@ import {
   applyResourceMutation,
 } from './resource'
 
+export interface AsyncValueStream<T> extends Stream<AsyncValue<T>> {}
+export interface AsyncListStream<T> extends Stream<AsyncValue<T>[]> {}
+
 export abstract class AsyncValue<T> {
   /**
    * Stream operator to get a stream of related resources from a resource

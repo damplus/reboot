@@ -17,5 +17,5 @@ export { addStore, addReducer, Store, StoreRequest, createStoreMiddleware } from
 export { oauth, requiresLogin, AuthService, HasAuthService, LoginParams } from './oauth'
 
 export { HttpClient, StubbedEndpoints, HasHTTPClient, addHttpClient, addStubHttpClient, retryRequests } from './http'
-export { Resource } from './resource'
+export { Resource, ResourceQuery } from './resource'
 export { AsyncValue, PresentAyncValue, MissingAsyncValue, MutationType } from './async-value'
