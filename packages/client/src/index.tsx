@@ -2,7 +2,7 @@ import * as React from 'react'
 import { render } from 'react-dom'
 import { Stream } from 'xstream'
 import * as qs from 'querystring'
-import { uniqueId, assign } from 'lodash'
+import { uniqueId } from 'lodash'
 
 import {
   terminalNext,
@@ -13,15 +13,15 @@ import {
   Transition, stringifyTransition, transition$
 } from 'reboot-core'
 
-import { toPromise, popState$ } from './util'
+import { toPromise, popState$, log } from './util'
 
 export interface MountParams {
   routes: AnyRoute[]
   transitions$: Stream<string>
   path: string
-  onTitleChange(title: string): void
-  onPushLocation(data: any, title: string, url?: string | null): void
-  onReplaceLocation(data: any, title: string, url?: string | null): void
+  onTitleChange: (title: string) => void
+  onPushLocation: (data: any, title: string, url?: string | null) => void
+  onReplaceLocation: (data: any, title: string, url?: string | null) => void
 }
 
 export type RouteDeclaration = AnyRoute | (() => AnyRoute)
@@ -74,9 +74,12 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
 
   const location = matchRoute(params.path)
   const req: BaseRequest = { location }
+  log.trace('matched initial route', stringifyTransition(location))
 
   return unpackRouteDeclaration(location.handler).apply(req, terminalNext()).then(response => {
     if (response.state === 'render') {
+      log.trace('performing initial render')
+
       if (!response.body) {
         throw new Error('No body declared on route')
       }
@@ -96,14 +99,19 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
       )
 
     } else {
-      if (stringifyTransition(response.location) === stringifyTransition(location)) {
+      const path = stringifyTransition(response.location)
+      log.trace('redirecting initial page ->', path)
+
+      if (params.path === path) {
         throw new Error(
-          `Encountered recursive redirect (${stringifyTransition(location)} => ${stringifyTransition(response.location)})`
+          `Encountered recursive redirect (${path} => ${stringifyTransition(response.location)})`
         )
       }
-      return start(assign({}, params, {
-        location: stringifyTransition(response.location)
-      }))
+
+      return start({
+        ...params,
+        path
+      })
     }
   })
 }
@@ -165,6 +173,9 @@ export class Client extends React.Component<ClientProps, ClientState> {
   }
 
   performTransition(target: Transition<{}, {}>, replaceState?: boolean): Promise<void> {
+    const address = stringifyTransition(target)
+    log.trace('received transition request', address, 'replaceState = ', replaceState)
+
     const request: BaseRequest = {
       location: target
     }
@@ -175,6 +186,7 @@ export class Client extends React.Component<ClientProps, ClientState> {
     return unpackRouteDeclaration(target.handler).apply(request, terminalNext()).then(response => {
       // Guard against transition races
       if (this.transitionID !== transitionID) return Promise.resolve()
+      log.trace('mounted route', address, 'waiting for rendering to complete...')
 
       this.routeWillTransition()
       if (response.state === 'render') {
@@ -187,11 +199,17 @@ export class Client extends React.Component<ClientProps, ClientState> {
           Stream.combine(response.body.take(1), response.title.take(1))
         )
         .then((responses) => {
+          log.trace('render completed for route', address)
           // Set app state and complete the transition
           const [content, title] = responses
 
           this.setState({ request, response, content: content || <div/> }, () => Promise.resolve().then(() => {
-            if (this.transitionID !== transitionID) return
+            log.trace('transition complete for route', address)
+
+            if (this.transitionID !== transitionID) {
+              log.trace('(ignoring due to transition race)')
+              return
+            }
 
             this.transitionID = undefined
             this.routeDidTransition()
@@ -206,8 +224,13 @@ export class Client extends React.Component<ClientProps, ClientState> {
         })
 
       } else {
+        log.trace('redirect', address, '->', stringifyTransition(response.location))
         return this.performTransition(response.location, true)
       }
+    })
+    .catch(err => {
+      log.trace('transition failed for route', address, 'with error', err)
+      return Promise.reject(err)
     })
   }
 
