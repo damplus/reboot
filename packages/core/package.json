@@ -9,9 +9,9 @@
     "test": "node ../../scripts/test"
   },
   "dependencies": {
-    "lodash": "^4.17.2",
+    "lodash": "^4.17.4",
     "querystring": "^0.2.0",
-    "route-recognizer": "^0.2.8"
+    "route-recognizer": "^0.2.9"
   },
   "peerDependencies": {
     "react": "^15.4.1",
