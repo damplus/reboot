@@ -6,7 +6,7 @@ import { collect } from './helpers'
 
 interface Parent { child: string }
 
-describe.only('AsyncValue', () => {
+describe('AsyncValue', () => {
   describe('.waitFor()', () => {
     it('should extract value, skipping pending values', async () => {
       const child$ = asyncStream(loading(), loaded('foo'), loading())

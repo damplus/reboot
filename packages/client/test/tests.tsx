@@ -18,10 +18,7 @@ describe('client', () => {
     client = await createClientRenderer({
       path: '/',
       routes: [
-        new lib.Route({
-          path: '/',
-          middleware: lib.render(() => content)
-        })
+        createRoute('/', lib.render(() => content))
       ]
     })
     expect(client.render()).to.have.text('1')
@@ -38,10 +35,12 @@ describe('client', () => {
     client = await createClientRenderer({
       path: '/',
       routes: [
-        new lib.Route({
-          path: '/',
-          middleware: lib.composeMiddleware(lib.renderTitle(() => content), lib.render(<span />))
-        })
+        createRoute('/',
+          lib.composeMiddleware(
+            lib.renderTitle(() => content),
+            lib.render(<span />)
+          )
+        )
       ],
       onTitleChange: t => title = t
     })
@@ -55,22 +54,19 @@ describe('client', () => {
   it('should push location on transition', async () => {
     const transitionRequest$ = Stream.createWithMemory<string>()
     const transitions: { title: string, path: string }[] = []
-    const target = new lib.Route({
-      path: '/link-target',
-      middleware: () => Promise.resolve<lib.MountRender>({
+    const target = createRoute(
+      '/link-target',
+      () => Promise.resolve<lib.MountRender>({
         body: Stream.of(<div />),
         title: Stream.of('Target Page'),
         state: 'render'
       })
-    })
+    )
 
     client = await createClientRenderer({
       path: '/',
       routes: [
-        new lib.Route({
-          path: '/',
-          middleware: lib.render(() => <div />)
-        }),
+        createRoute('/', lib.render(() => <div />)),
         target
       ],
       transitions$: transitionRequest$,
@@ -92,13 +88,21 @@ describe('client', () => {
 
 
 interface RendererParams {
-  routes: lib.Route<lib.BaseRequest>[]
+  routes: lib.Route<lib.BaseRequest, {}>[]
   path: string
 
   transitions$?: Stream<string>
   onTitleChange?: (title: string) => void
   onPushLocation?: (location: lib.Transition<{}, {}>, title: string, url: string) => void
   onReplaceLocation?: (location: lib.Transition<{}, {}>, title: string, url: string) => void
+}
+
+function createRoute(path: string, middleware: lib.Middleware<lib.BaseRequest, {}>) {
+  return new lib.Route({
+    path,
+    middleware,
+    parent: { apply: (req, cb) => cb(req, []) }
+  })
 }
 
 async function createClientRenderer(props: RendererParams) {
