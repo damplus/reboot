@@ -40,7 +40,7 @@ export abstract class AsyncValue<T> {
   static waitFor<T>(s: Stream<AsyncValue<T>>): Stream<T> {
     return s.map(val => val
       .map(x => Stream.of(x))
-      .getWithDefault(Stream.never())
+      .getWithDefault(Stream.empty())
     )
     .flatten()
   }
