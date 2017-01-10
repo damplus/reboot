@@ -7,7 +7,8 @@ import {
   BaseRequest,
   Matcher,
   AnyRoute,
-  stringifyTransition
+  stringifyTransition,
+  createStore
 } from 'reboot-core'
 
 import { toPromise, toStream } from './util'
@@ -31,7 +32,7 @@ export function render(params: MountParams): Promise<RenderOutput> {
     return Promise.reject(new Error('Failed to match {params.path}'))
   }
 
-  const req: BaseRequest = { location }
+  const req: BaseRequest = { location, store: createStore() }
 
   return location.handler.apply(req, terminalNext()).then((response): RenderOutput | Promise<RenderOutput> => {
     if (response.state === 'render') {

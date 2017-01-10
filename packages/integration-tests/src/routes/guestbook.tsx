@@ -1,12 +1,11 @@
 import * as React from 'react'
-import { addStore, addHttpClient, MutationType } from 'reboot-core'
+import { addHttpClient, MutationType } from 'reboot-core'
 
 import { GuestbookService, GuestbookPost } from '../services/guestbook'
 import root from './root'
 
 export default () => root()
   .subroute('/guestbook')
-  .use(addStore())
   .use(addHttpClient())
   .title('Guestbook')
   .add('guestbook', GuestbookService)

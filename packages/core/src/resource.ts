@@ -1,7 +1,7 @@
 import { Stream } from 'xstream'
 import { assign } from 'lodash'
 
-import { Store } from './middlewares.redux'
+import { Store } from './store'
 import { AsyncValue, AsyncValueStream, AsyncListStream, MissingAsyncValue, PresentAyncValue } from './async-value'
 
 export type ResourceMutation<T>

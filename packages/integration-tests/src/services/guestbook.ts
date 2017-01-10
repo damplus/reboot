@@ -1,5 +1,5 @@
 import { keyBy } from 'lodash'
-import { Resource, AsyncValue, ResourceQuery, HasHTTPClient, HttpClient } from 'reboot-core'
+import { HasState, Resource, AsyncValue, ResourceQuery, HasHTTPClient, HttpClient } from 'reboot-core'
 
 export interface GuestbookPost {
 	userId: number;
@@ -13,7 +13,7 @@ export class GuestbookService {
   private posts: Resource<GuestbookPost>
   private query: ResourceQuery<{}, GuestbookPost>
 
-  constructor(opts: HasHTTPClient & { store: any }) {
+  constructor(opts: HasHTTPClient & HasState<{}>) {
     this.http = opts.http
     this.posts = new Resource({
       key: 'guestbook',

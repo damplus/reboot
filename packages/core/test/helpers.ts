@@ -1,4 +1,5 @@
 import { Listener, Stream } from 'xstream'
+import { assign } from 'lodash'
 
 import * as rb from '../src'
 import { toPromise } from '../src/util'
@@ -14,7 +15,8 @@ export function createTestRequest(): rb.BaseRequest {
         }
       }),
       params: {}
-    }
+    },
+    store: rb.createStore()
   }
 }
 
@@ -27,9 +29,11 @@ export function waitFor<T>(s: Stream<T>, cond: (x: T) => boolean) {
 }
 
 export async function applyMiddleware<Rs>(m: rb.Middleware<rb.BaseRequest, Rs>) {
-  let request: Rs | undefined
-  const response = await m(createTestRequest(), async (req) => {
-    request = req
+  let request: (rb.BaseRequest & Rs) | undefined
+  const startReq = createTestRequest()
+
+  const response = await m(startReq, async (props) => {
+    request = assign(startReq, props)
     return rb.defaultResponse()
   })
 

@@ -5,7 +5,7 @@ import { Stream } from 'xstream'
 import * as rb from '../src'
 import { applyMiddleware, StreamCollector } from './helpers'
 
-describe('render middleware', () => {
+describe('render middlewares', () => {
   it('should render constant element', async () => {
     const { body } = await applyRenderMiddleware(rb.render(<div>Hello</div>))
     expect(body).to.eql([<div>Hello</div>])

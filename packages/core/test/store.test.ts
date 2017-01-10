@@ -4,20 +4,14 @@ import { Action } from 'redux'
 import * as rb from '../src'
 import { applyMiddleware, StreamCollector } from './helpers'
 
-describe('redux middleware', () => {
-  it('should add store to requests', async () => {
-    const m = await applyMiddleware(rb.addStore())
-    expect(m.request!.store).to.exist
-  })
-
+describe('store', () => {
   it('should dispatch actions and subscribe to store changed events', async () => {
-    const { request } = await applyMiddleware(rb.composeMiddleware(
-      rb.addStore(),
+    const { request } = await applyMiddleware(
       rb.addReducer('counter', (x: number = 0, action: Action) => {
         if (action.type === 'increment') return x + 1
         else return x
       })
-    ))
+    )
 
     const listener = new StreamCollector<number>()
     request!.store.select$((x: { counter: number }) => x.counter).subscribe(listener)

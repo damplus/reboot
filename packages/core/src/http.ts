@@ -1,5 +1,5 @@
 import { Middleware } from './middleware'
-import { requestProp } from './middlewares.request'
+import { requestProp } from './request-props'
 
 export interface HttpClient {
   (url: string, opts?: RequestInit): Promise<Response>
