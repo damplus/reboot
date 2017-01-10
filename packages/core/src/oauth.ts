@@ -37,7 +37,7 @@ export interface LoginResponse {
 
 export function oauth(config: AuthOpts): Middleware<BaseRequest & HasHTTPClient, HasAuthService & HasHTTPClient> {
   return async (req, next) => {
-    const state = await initialAuthState(req.http, config.validationEndpoint)
+    const state = await initialAuthState(req.http, config.loginEndpoint)
     const store = req.store.addReducer('oauth', authStateReducer(state))
 
     const service = new AuthService({
@@ -77,7 +77,7 @@ export function requiresLogin(): Middleware<HasAuthService, {}> {
 /** Manages login state */
 
 export type AuthState
-= { status: 'logged-in', token: string }
+= { status: 'logged-in', token: string, refresh: string }
 | { status: 'logged-out' }
 
 export class AuthService {
@@ -103,6 +103,7 @@ export class AuthService {
 
   async logOut() {
     this.store.dispatch<AuthStateAction>({ type: 'auth.logout' })
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY)
   }
 
   async logIn(credentials: LoginParams) {
@@ -119,6 +120,8 @@ export class AuthService {
     log.trace('Login succeeded')
 
     this.store.dispatch<AuthStateAction>({ type: 'auth.login', credentials: response })
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, response.refresh_token)
+
     requestTransition(this.startPage())
   }
 
@@ -191,7 +194,35 @@ export class AuthService {
 
 /** Confirms that the user is logged in by checking against the validation endpoint */
 
-async function initialAuthState(http: HttpClient, validationEndpoint: string): Promise<AuthState> {
+async function initialAuthState(http: HttpClient, loginEndpoint: string): Promise<AuthState> {
+  // [fixme] - Browser-specific code
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    // [fixme] - Use cookies instead
+    const refresh_token = window.sessionStorage.getItem(SESSION_STORAGE_KEY)
+
+    if (refresh_token) {
+    try {
+        log.trace('Found a refresh token. Validating it...')
+
+        const { access_token } = await http(loginEndpoint, {
+          method: 'POST',
+          headers: new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' }),
+          body: qs.stringify({
+            grant_type: 'refresh_token',
+            refresh_token
+          }),
+        }).then<LoginResponse>(r => r.json())
+
+        log.trace('Token is valid. Entering route in logged-in state')
+        return { status: 'logged-in', token: access_token, refresh: refresh_token }
+
+      } catch (err) {
+        log.trace('Token is not valid')
+      }
+    }
+  }
+
+  log.trace('Entering route in logged-out state')
   return { status: 'logged-out' }
 }
 
@@ -209,7 +240,7 @@ export type AuthStateAction
 export function authStateReducer(initialState: AuthState): Reducer<AuthState> {
   return function reduceAuthState(prev: AuthState = initialState, action: AuthStateAction | { type: '' }): AuthState {
     if (action.type === 'auth.login') {
-      return { status: 'logged-in', token: action.credentials.access_token }
+      return { status: 'logged-in', token: action.credentials.access_token, refresh: action.credentials.refresh_token }
 
     } else if (action.type === 'auth.logout') {
       return { status: 'logged-out' }
@@ -218,3 +249,5 @@ export function authStateReducer(initialState: AuthState): Reducer<AuthState> {
     return prev
   }
 }
+
+const SESSION_STORAGE_KEY = 'reboot.app.auth'
