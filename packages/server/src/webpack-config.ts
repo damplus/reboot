@@ -69,7 +69,7 @@ export function webpackConfig(opts: WebpackOpts): {} {
         {
           test: /\.css$/,
           loader: extract(opts.extractStyles, 'style',
-            ['style', 'css', 'postcss']
+            ['css', 'postcss']
           )
         },
         {
