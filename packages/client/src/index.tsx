@@ -10,7 +10,8 @@ import {
   MountRender,
   createMatcher,
   AnyRoute,
-  Transition, stringifyTransition, transition$
+  Transition, stringifyTransition, transition$,
+  Store, createStore
 } from 'reboot-core'
 
 import { toPromise, popState$, log } from './util'
@@ -72,8 +73,9 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
     }
   }
 
+  const store = createStore()
   const location = matchRoute(params.path)
-  const req: BaseRequest = { location }
+  const req: BaseRequest = { location, store }
   log.trace('matched initial route', stringifyTransition(location))
 
   return unpackRouteDeclaration(location.handler).apply(req, terminalNext()).then(response => {
@@ -87,6 +89,7 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
       return toPromise(
         response.body.take(1).map(content =>
           <Client
+            store={store}
             initialContent={content}
             initialRequest={req}
             initialResponse={response}
@@ -117,6 +120,7 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
 }
 
 export interface ClientProps {
+  store: Store<{}>
   transitions: Stream<Transition<{}, {}>>
   initialRequest: BaseRequest
   initialResponse: MountRender
@@ -177,7 +181,8 @@ export class Client extends React.Component<ClientProps, ClientState> {
     log.trace('received transition request', address, 'replaceState = ', replaceState)
 
     const request: BaseRequest = {
-      location: target
+      location: target,
+      store: this.props.store
     }
     const transitionID = uniqueId('transition')
     this.transitionID = transitionID

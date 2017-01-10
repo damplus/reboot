@@ -6,7 +6,7 @@ import { Reducer } from 'redux'
 import { MountResponse } from './response'
 import { BaseRequest } from './request'
 import { Middleware } from './middleware'
-import { StoreRequest, Store } from './middlewares.redux'
+import { Store } from './store'
 import { HttpClient, HasHTTPClient } from './http'
 import { Transition, stringifyTransition, requestTransition } from './transition'
 import { log } from './util'
@@ -35,7 +35,7 @@ export interface LoginResponse {
 
 /** Adds oauth support to an application */
 
-export function oauth(config: AuthOpts): Middleware<BaseRequest & HasHTTPClient & StoreRequest<{}>, HasAuthService & HasHTTPClient> {
+export function oauth(config: AuthOpts): Middleware<BaseRequest & HasHTTPClient, HasAuthService & HasHTTPClient> {
   return async (req, next) => {
     const state = await initialAuthState(req.http, config.validationEndpoint)
     const store = req.store.addReducer('oauth', authStateReducer(state))

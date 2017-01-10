@@ -1,9 +1,9 @@
 import { createStore as defaultCreateStore, combineReducers, Action, Reducer, ReducersMapObject, Store as ReduxStore } from 'redux'
 import { Stream } from 'xstream'
 import dropRepeats from 'xstream/extra/dropRepeats'
-import { memoize } from 'lodash'
 
 import { Middleware } from './middleware'
+import { HasState } from './request'
 
 export interface Store<T> {
   dispatch<A extends Action>(a: A): void
@@ -16,52 +16,35 @@ export interface Store<T> {
   getState(): T
 }
 
-export interface StoreRequest<T> {
-  store: Store<T>
-}
-
 declare const __REDUX_DEVTOOLS_EXTENSION__: any
 
-/**
- * Attaches a redux store to the request.
- *
- * This should be done once on the '/' route if you want to use redux to manage
- * application state.
- **/
-export const addStore: (() => Middleware<{}, StoreRequest<{}>>) = memoize(createStoreMiddleware)
-
-
-export function createStoreMiddleware(): Middleware<{}, StoreRequest<{}>> {
+export function createStore(): Store<{}> {
   const reduxStore = defaultCreateStore(() => ({}),
     (typeof __REDUX_DEVTOOLS_EXTENSION__ !== 'undefined')
     ? __REDUX_DEVTOOLS_EXTENSION__()
     : undefined
   )
 
-  return (req, next) => {
-    let unsubscribe = () => {}
+  let unsubscribe = () => {}
 
-    const $ = Stream.createWithMemory({
-      start: listener => {
+  const $ = Stream.createWithMemory({
+    start: listener => {
+      listener.next(reduxStore.getState())
+      unsubscribe = reduxStore.subscribe(() => {
         listener.next(reduxStore.getState())
-        unsubscribe = reduxStore.subscribe(() => {
-          listener.next(reduxStore.getState())
-        })
-      },
-      stop: () => unsubscribe()
-    })
-
-    return next({
-      store: wrapStore({
-        $,
-        store: reduxStore,
-        reducers: {}
       })
-    })
-  }
+    },
+    stop: () => unsubscribe()
+  })
+
+  return wrapStore({
+    $,
+    store: reduxStore,
+    reducers: {}
+  })
 }
 
-export function addReducer<Key extends string, Shape>(key: Key, reducer: Reducer<Shape>): Middleware<StoreRequest<{}>, StoreRequest<Record<Key, Shape>>> {
+export function addReducer<Key extends string, Shape>(key: Key, reducer: Reducer<Shape>): Middleware<HasState<{}>, HasState<Record<Key, Shape>>> {
   return ({ store }, next) => next({
     store: store.addReducer(key, reducer)
   })

@@ -4,8 +4,8 @@ import { assign } from 'lodash'
 import { BaseRequest } from './request'
 import { MountResponse } from './response'
 import { Middleware, compose, noop } from './middleware'
-import { requestProp } from './middlewares.request'
-import { RenderFn, render, renderTitle } from './middlewares.rendering'
+import { requestProp } from './request-props'
+import { RenderFn, render, renderTitle } from './rendering'
 import { Transition } from './transition'
 
 export interface RouteProps<Input extends BaseRequest, AddedProps> {

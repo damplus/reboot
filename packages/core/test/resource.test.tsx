@@ -10,7 +10,7 @@ interface Greeting {
 
 const anError = new Error('Boo')
 
-describe('resource middleware', () => {
+describe('Resource', () => {
   context('in initial state', () => {
     async function setup(fn: () => Promise<Greeting>) {
       const { request } = await applyMiddleware(addResource('fooResource', fn))
@@ -124,8 +124,5 @@ describe('resource middleware', () => {
 })
 
 function addResource<Key extends string>(key: Key, fetch: (id: string) => Promise<Greeting>): rb.Middleware<{}, Record<Key, rb.Resource<Greeting>>> {
-  return rb.composeMiddleware(
-    rb.createStoreMiddleware(),
-    rb.requestProp(key, ({ store }) => new rb.Resource({ key, store, fetch })),
-  )
+  return rb.requestProp(key, ({ store }) => new rb.Resource({ key, store, fetch }))
 }
