@@ -4,7 +4,7 @@ export {
   compose as composeMiddleware
 } from './middleware'
 
-export { BaseRequest } from './request'
+export { BaseRequest, HasState } from './request'
 export { MountRender, defaultResponse } from './response'
 export { Matcher, createMatcher } from './match'
 export { app, Route, AnyRoute } from './route'
