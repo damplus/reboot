@@ -16,19 +16,24 @@ export interface Transition<RouteParams, Params extends RouteParams> {
   queryParams?: QueryParams
 }
 
-let transitionListener: Listener<string>
+const globalObject = new Function('return this') as (() => { __reboot_page_transition_source?: Listener<string> })
 
 export const transition$ = Stream.create<string>({
   start(listener) {
-    transitionListener = listener
+    globalObject().__reboot_page_transition_source = listener
   },
   stop() {}
 })
 
 export function requestTransition<RouteParams, Params extends RouteParams>(t: Transition<RouteParams, Params> | string) {
-  if (transitionListener) {
+  const listener = globalObject().__reboot_page_transition_source
+
+  if (listener) {
     log.trace('Transition requested:', stringifyTransition(t))
-    transitionListener.next(stringifyTransition(t))
+    listener.next(stringifyTransition(t))
+
+  } else {
+    log.trace('Transition ignored because no listener is registered')
   }
 }
 
