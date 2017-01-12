@@ -1,5 +1,5 @@
 import { Stream } from 'xstream'
-import { assign } from 'lodash'
+import { merge } from 'lodash'
 
 import { Store } from './store'
 import { AsyncValue, AsyncValueStream, AsyncListStream, MissingAsyncValue, PresentAyncValue } from './async-value'
@@ -173,7 +173,7 @@ export function applyResourceMutation<T>(value: T, mutation?: ResourceMutation<T
     return value
 
   } else if (mutation.type === 'patch') {
-    return value && assign({}, value, mutation.deltaValue)
+    return value && merge({}, value, mutation.deltaValue)
 
   } else {
     return mutation.value
