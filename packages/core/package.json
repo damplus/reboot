@@ -1,7 +1,7 @@
 {
   "name": "reboot-core",
   "description": "Reboot React Framework",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "main": "dist/es5/index.js",
   "typings": "dist/es6/index.d.ts",
   "scripts": {
