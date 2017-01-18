@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Stream } from 'xstream'
+import { DataStream } from 'reboot-core'
 import * as qs from 'querystring'
 
 import {
@@ -10,8 +10,6 @@ import {
   stringifyTransition,
   createStore
 } from 'reboot-core'
-
-import { toPromise, toStream } from './util'
 
 export interface MountParams {
   matcher: Matcher<AnyRoute>
@@ -36,17 +34,17 @@ export function render(params: MountParams): Promise<RenderOutput> {
 
   return location.handler.apply(req, terminalNext()).then((response): RenderOutput | Promise<RenderOutput> => {
     if (response.state === 'render') {
-      return toPromise(
-        Stream.combine(
-          response.title.take(1),
-          toStream<React.ReactElement<{}> | undefined>(response.body).take(1)
-        )
-        .map(tb => ({
-          status: response.status || 200,
-          title: tb[0],
-          body: tb[1],
-        }))
+      return DataStream.combine(
+        response.title.take(1),
+        (response.body || DataStream.error(new Error('No body present'))).take(1)
       )
+      .map(tb => ({
+        status: response.status || 200,
+        title: tb[0],
+        body: tb[1],
+      }))
+      .collect()
+      .then(x => x[0])
 
     } else {
       const address = stringifyTransition(response.location)

@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 
 import * as rb from '../src'
-import { applyMiddleware, collect } from './helpers'
+import { applyMiddleware } from './helpers'
 
 interface Greeting {
   salutation: string
@@ -19,9 +19,9 @@ describe('Resource', () => {
 
     it('should load successfuly fetched resource', async () => {
       const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
-      const events = await collect(request!.fooResource.$('foo').take(2))
+      const events = request!.fooResource.$('foo').take(2).collect()
 
-      expect(events).to.eql([
+      expect(await events).to.eql([
         new rb.MissingAsyncValue({ status: 'loading' }),
         new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
       ])
@@ -29,9 +29,9 @@ describe('Resource', () => {
 
     it('should error unsuccessfuly fetched resource', async () => {
       const request = await setup(() => Promise.reject(anError))
-      const events = await collect(request!.fooResource.$('foo').take(2))
+      const events = request!.fooResource.$('foo').take(2).collect()
 
-      expect(events).to.eql([
+      expect(await events).to.eql([
         new rb.MissingAsyncValue({ status: 'loading' }),
         new rb.MissingAsyncValue({ status: 'failed', error: anError }),
       ])
@@ -43,9 +43,9 @@ describe('Resource', () => {
         await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'put', value: { salutation: 'hello', object: 'friend' } }, () => Promise.resolve())
-        const events = await collect(request!.fooResource.$('foo').take(2))
+        const events = request!.fooResource.$('foo').take(2).collect()
 
-        expect(events).to.eql([
+        expect(await events).to.eql([
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'put', value: { salutation: 'hello', object: 'friend' } } }),
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'friend' } }),
         ])
@@ -56,9 +56,9 @@ describe('Resource', () => {
         await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'put', value: { salutation: 'hello', object: 'friend' } }, () => Promise.reject(anError))
-        const events = await collect(request!.fooResource.$('foo').take(2))
+        const events = request!.fooResource.$('foo').take(2).collect()
 
-        expect(events).to.eql([
+        expect(await events).to.eql([
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'put', value: { salutation: 'hello', object: 'friend' } } }),
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
         ])
@@ -71,9 +71,9 @@ describe('Resource', () => {
         await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'patch', deltaValue: { object: 'friend' } }, () => Promise.resolve())
-        const events = await collect(request!.fooResource.$('foo').take(2))
+        const events = request!.fooResource.$('foo').take(2).collect()
 
-        expect(events).to.eql([
+        expect(await events).to.eql([
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'patch', deltaValue: { object: 'friend' } } }),
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'friend' } }),
         ])
@@ -84,9 +84,9 @@ describe('Resource', () => {
         await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'patch', deltaValue: { object: 'friend' } }, () => Promise.reject(anError))
-        const events = await collect(request!.fooResource.$('foo').take(2))
+        const events = request!.fooResource.$('foo').take(2).collect()
 
-        expect(events).to.eql([
+        expect(await events).to.eql([
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'patch', deltaValue: { object: 'friend' } } }),
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
         ])
@@ -99,9 +99,9 @@ describe('Resource', () => {
         await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'delete' }, () => Promise.resolve())
-        const events = await collect(request!.fooResource.$('foo').take(2))
+        const events = request!.fooResource.$('foo').take(2).collect()
 
-        expect(events).to.eql([
+        expect(await events).to.eql([
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'delete' } }),
           new rb.MissingAsyncValue({ status: 'deleted' }),
         ])
@@ -112,9 +112,9 @@ describe('Resource', () => {
         await request.fooResource.fetch('foo')
 
         request.fooResource.mutate('foo', { type: 'delete' }, () => Promise.reject(anError))
-        const events = await collect(request!.fooResource.$('foo').take(2))
+        const events = request!.fooResource.$('foo').take(2).collect()
 
-        expect(events).to.eql([
+        expect(await events).to.eql([
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' }, mutation: { type: 'delete' } }),
           new rb.PresentAyncValue({ status: 'loaded', value: { salutation: 'hello', object: 'world' } }),
         ])

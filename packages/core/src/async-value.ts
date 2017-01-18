@@ -1,4 +1,4 @@
-import { Stream } from 'xstream'
+import { DataStream } from './stream'
 
 import {
   ResourceStateLoading,
@@ -8,8 +8,8 @@ import {
   applyResourceMutation,
 } from './resource'
 
-export interface AsyncValueStream<T> extends Stream<AsyncValue<T>> {}
-export interface AsyncListStream<T> extends Stream<AsyncValue<T>[]> {}
+export interface AsyncValueStream<T> extends DataStream<AsyncValue<T>> {}
+export interface AsyncListStream<T> extends DataStream<AsyncValue<T>[]> {}
 
 export abstract class AsyncValue<T> {
   /**
@@ -18,14 +18,12 @@ export abstract class AsyncValue<T> {
    * (eg: to convert a stream of `employee` resources to a stream of `company`
    * resources by following the `employer` relationship)
    **/
-  static getChild<P, C>(fn: (parent: P) => Stream<AsyncValue<C>>): (parent$: Stream<AsyncValue<P>>) => Stream<AsyncValue<C>>
-  static getChild<P, C>(fn: (parent: P) => Stream<C>): (parent$: Stream<AsyncValue<P>>) => Stream<AsyncValue<C>>
+  static getChild<P, C>(fn: (parent: P) => DataStream<AsyncValue<C>>): (parent$: DataStream<AsyncValue<P>>) => DataStream<AsyncValue<C>>
+  static getChild<P, C>(fn: (parent: P) => DataStream<C>): (parent$: DataStream<AsyncValue<P>>) => DataStream<AsyncValue<C>>
 
-  static getChild<P, C>(fn: (parent: P) => Stream<C | AsyncValue<C>>) {
-    return (parent$: Stream<AsyncValue<P>>): Stream<AsyncValue<C>> => (
-      parent$
-        .map(parentRes => parentRes.map(fn))
-        .compose(AsyncValue.flattenStreamOf)
+  static getChild<P, C>(fn: (parent: P) => DataStream<C | AsyncValue<C>>) {
+    return (parent$: DataStream<AsyncValue<P>>): DataStream<AsyncValue<C>> => (
+      AsyncValue.flattenStreamOf(parent$.map(parentRes => parentRes.map(fn)))
     )
   }
 
@@ -33,19 +31,17 @@ export abstract class AsyncValue<T> {
    * Eliminates the intermediate async state between two streams, merging with the async state
    * of the inner stream if present
    */
-  static flattenStreamOf<T>(stream: Stream<AsyncValue<Stream<T | AsyncValue<T>>>>): Stream<AsyncValue<T>> {
+  static flattenStreamOf<T>(stream: DataStream<AsyncValue<DataStream<T | AsyncValue<T>>>>): DataStream<AsyncValue<T>> {
     return stream
       .map(r1 => r1.map(r2$ => r2$.map(AsyncValue.coerceFrom)))
-      .map(r1 => r1.getWithDefault(missingVal => Stream.of(missingVal)))
-      .flatten()
+      .flatMap(r1 => r1.getWithDefault(missingVal => DataStream.of(missingVal)))
   }
 
-  static waitFor<T>(s: Stream<AsyncValue<T>>): Stream<T> {
-    return s.map(val => val
-      .map(x => Stream.of(x))
-      .getWithDefault(Stream.empty())
+  static waitFor<T>(s: DataStream<AsyncValue<T>>): DataStream<T> {
+    return s.flatMap(val =>val
+      .map(x => DataStream.of(x))
+      .getWithDefault(DataStream.empty())
     )
-    .flatten()
   }
 
   static coerceFrom<T>(value: T | AsyncValue<T>): AsyncValue<T> {

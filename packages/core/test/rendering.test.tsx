@@ -1,9 +1,8 @@
 import * as React from 'react'
 import { expect } from 'chai'
-import { Stream } from 'xstream'
 
 import * as rb from '../src'
-import { applyMiddleware, StreamCollector } from './helpers'
+import { applyMiddleware } from './helpers'
 
 describe('render middlewares', () => {
   it('should render constant element', async () => {
@@ -17,7 +16,7 @@ describe('render middlewares', () => {
   })
 
   it('should render streaming render function', async () => {
-    const { body } = await applyRenderMiddleware(rb.render(() => Stream.of(<div>1</div>, <div>2</div>)))
+    const { body } = await applyRenderMiddleware(rb.render(() => rb.DataStream.of(<div>1</div>, <div>2</div>)))
     expect(body).to.eql([<div>1</div>, <div>2</div>])
   })
 
@@ -56,12 +55,9 @@ async function applyRenderMiddleware(m: rb.Middleware<{}, {}>) {
   const { response } = await applyMiddleware(m)
   expect(response.state).to.eql('render')
 
-  const body = new StreamCollector<React.ReactElement<{}>>()
-  const title = new StreamCollector<string>()
-
   const render = (response as rb.MountRender)
-  if (render.body) render.body.subscribe(body)
-  if (render.title) render.title.subscribe(title)
-
-  return { body: body.nexts, title: title.nexts }
+  return {
+    body: await (render.body || rb.DataStream.empty()).collect(),
+    title: await (render.title || rb.DataStream.empty()).collect()
+  }
 }

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { expect } from 'chai'
-import { Stream } from 'xstream'
+import { DataStream } from 'reboot-core'
 import { assign } from 'lodash'
 import * as lib from 'reboot-core'
 import { mount, ReactWrapper } from 'enzyme'
@@ -12,32 +12,34 @@ describe('client', () => {
   afterEach(() => client.unmount())
 
   it('should render route content', async () => {
-    const content = Stream.create<React.ReactElement<{}>>()
-      .startWith(<div>1</div>)
+    const { stream, listener } = DataStream.createWithTestListener<React.ReactElement<{}>>()
+    listener.next(<div>1</div>)
 
     client = await createClientRenderer({
       path: '/',
       routes: [
-        createRoute('/', lib.render(() => content))
+        createRoute('/', lib.render(() => stream))
       ]
     })
+
     expect(client.render()).to.have.text('1')
 
-    content.shamefullySendNext(<div>2</div>)
+    listener.next(<div>2</div>)
     expect(client.render()).to.have.text('2')
   })
 
   it('should render route title', async () => {
+    const { stream, listener } = DataStream.createWithTestListener<string>()
     let title
-    const content = Stream.create<string>()
-      .startWith('1')
+
+    listener.next('1')
 
     client = await createClientRenderer({
       path: '/',
       routes: [
         createRoute('/',
           lib.composeMiddleware(
-            lib.renderTitle(() => content),
+            lib.renderTitle(() => stream),
             lib.render(<span />)
           )
         )
@@ -47,18 +49,19 @@ describe('client', () => {
     client.render()
     expect(title).to.eql('1')
 
-    content.shamefullySendNext('2')
+    listener.next('2')
     expect(title).to.eql('2')
   })
 
   it('should push location on transition', async () => {
-    const transitionRequest$ = Stream.createWithMemory<string>()
-    const transitions: { title: string, path: string }[] = []
+    const { stream, listener } = DataStream.createWithTestListener<string>()
+    const transitions = DataStream.createWithTestListener<{ title: string, path: string }>()
+
     const target = createRoute(
       '/link-target',
       () => Promise.resolve<lib.MountRender>({
-        body: Stream.of(<div />),
-        title: Stream.of('Target Page'),
+        body: DataStream.of(<div />),
+        title: DataStream.of('Target Page'),
         state: 'render'
       })
     )
@@ -69,18 +72,17 @@ describe('client', () => {
         createRoute('/', lib.render(() => <div />)),
         target
       ],
-      transitions$: transitionRequest$,
+      transitions$: stream,
       onPushLocation: (target, title, path) => {
-        transitions.push({ title, path })
+        transitions.listener.next({ title, path })
       }
     })
 
-    transitionRequest$.shamefullySendNext('/link-target')
-    await nextFrame
+    listener.next('/link-target')
 
-    expect(transitions).to.eql([
+    expect(await transitions.stream.first()).to.eql(
       { title: 'Target Page', path: '/link-target' }
-    ])
+    )
   })
 
   it('should avoid transition races')
@@ -91,7 +93,7 @@ interface RendererParams {
   routes: lib.Route<lib.BaseRequest, {}>[]
   path: string
 
-  transitions$?: Stream<string>
+  transitions$?: DataStream<string>
   onTitleChange?: (title: string) => void
   onPushLocation?: (location: lib.Transition<{}, {}>, title: string, url: string) => void
   onReplaceLocation?: (location: lib.Transition<{}, {}>, title: string, url: string) => void
@@ -108,7 +110,7 @@ function createRoute(path: string, middleware: lib.Middleware<lib.BaseRequest, {
 async function createClientRenderer(props: RendererParams) {
   const client = await start(
     assign({
-        transitions$: props.transitions$ || Stream.never(),
+        transitions$: props.transitions$ || DataStream.never(),
         onTitleChange: props.onTitleChange || (() => {}),
         onPushLocation: props.onPushLocation || (() => {}),
         onReplaceLocation: props.onReplaceLocation || (() => {})
@@ -122,5 +124,3 @@ async function createClientRenderer(props: RendererParams) {
 
   return wrapper
 }
-
-const nextFrame = Promise.resolve()

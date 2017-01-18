@@ -34,7 +34,7 @@ export class GuestbookService {
   get allPosts() {
     return this.query.$('all')
       .compose(AsyncValue.waitFor)
-      .flatten()
+      .flatMap(x => x)
   }
 
   update(id: number, value: Partial<GuestbookPost>) {

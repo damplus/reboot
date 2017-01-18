@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { Stream, Listener } from 'xstream'
 import { size } from 'lodash'
 import * as qs from 'querystring'
 
+import { DataStream, Listener} from './stream'
 import { RouteWithParams } from './route'
 import { log } from './util'
 
@@ -18,7 +18,7 @@ export interface Transition<RouteParams, Params extends RouteParams> {
 
 const globalObject = new Function('return this') as (() => { __reboot_page_transition_source?: Listener<string> })
 
-export const transition$ = Stream.create<string>({
+export const transition$ = DataStream.create<string>({
   start(listener) {
     globalObject().__reboot_page_transition_source = listener
   },
