@@ -1,7 +1,6 @@
 import { createStore as defaultCreateStore, combineReducers, Action, Reducer, ReducersMapObject, Store as ReduxStore } from 'redux'
-import { Stream } from 'xstream'
-import dropRepeats from 'xstream/extra/dropRepeats'
 
+import { DataStream } from './stream'
 import { Middleware } from './middleware'
 import { HasState } from './request'
 
@@ -9,8 +8,8 @@ export interface Store<T> {
   dispatch<A extends Action>(a: A): void
   bind<P>(actionCreator: ActionCreator<P>): (param: P) => void
 
-  select$<C>(fn: (state: T) => C): Stream<C>
-  select$<Key extends keyof T>(key: Key): Stream<T[Key]>
+  select$<C>(fn: (state: T) => C): DataStream<C>
+  select$<Key extends keyof T>(key: Key): DataStream<T[Key]>
 
   addReducer<Key extends string, Shape>(key: Key, r: Reducer<Shape>): Store<T & Record<Key, Shape>>
   getState(): T
@@ -27,7 +26,7 @@ export function createStore(): Store<{}> {
 
   let unsubscribe = () => {}
 
-  const $ = Stream.createWithMemory({
+  const $ = DataStream.create<{}>({
     start: listener => {
       listener.next(reduxStore.getState())
       unsubscribe = reduxStore.subscribe(() => {
@@ -50,12 +49,12 @@ export function addReducer<Key extends string, Shape>(key: Key, reducer: Reducer
   })
 }
 
-function wrapStore<T>({ store, reducers, $ }: { store: ReduxStore<T>, reducers: ReducersMapObject, $: Stream<T> }): Store<T> {
+function wrapStore<T>({ store, reducers, $ }: { store: ReduxStore<T>, reducers: ReducersMapObject, $: DataStream<T> }): Store<T> {
   const reducerMap = reducers as any
   const wrapper = {
     dispatch: store.dispatch,
     bind: <P>(ac: ActionCreator<P>) => (p: P) => { store.dispatch(ac(p)) },
-    select$: <C>(fn: (state: T) => C) => $.map(fn).compose(dropRepeats()),
+    select$: <C>(fn: (state: T) => C) => $.map(fn),
     addReducer: <Key extends string, Shape>(key: Key, fn: Reducer<Shape>): Store<T & Record<Key, Shape>> => {
       reducerMap[key] = fn
       store.replaceReducer(combineReducers<T>(reducerMap))

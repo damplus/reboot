@@ -1,6 +1,6 @@
-import { Stream } from 'xstream'
 import { merge } from 'lodash'
 
+import { DataStream } from './stream'
 import { Store } from './store'
 import { AsyncValue, AsyncValueStream, AsyncListStream, MissingAsyncValue, PresentAyncValue } from './async-value'
 
@@ -34,7 +34,7 @@ export class Resource<T> {
   $(keys: string[]): AsyncListStream<T>
   $(key: string): AsyncValueStream<T>
 
-  $(selector: string[] | string): Stream<any> {
+  $(selector: string[] | string): DataStream<any> {
     if (typeof selector === 'string') {
       this.fetch(selector, false)
 

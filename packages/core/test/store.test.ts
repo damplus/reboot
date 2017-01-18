@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { Action } from 'redux'
 
 import * as rb from '../src'
-import { applyMiddleware, StreamCollector } from './helpers'
+import { applyMiddleware } from './helpers'
 
 describe('store', () => {
   it('should dispatch actions and subscribe to store changed events', async () => {
@@ -13,12 +13,9 @@ describe('store', () => {
       })
     )
 
-    const listener = new StreamCollector<number>()
-    request!.store.select$((x: { counter: number }) => x.counter).subscribe(listener)
+    const changes = request!.store.select$((x: { counter: number }) => x.counter).take(2).collect()
 
     request!.store.dispatch({ type: 'increment' })
-    expect(listener.nexts).to.eql([0, 1])
-
-    request!.store.select$((x: { counter: number }) => x.counter).removeListener(listener)
+    expect(await changes).to.eql([0, 1])
   })
 })

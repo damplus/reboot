@@ -1,8 +1,5 @@
 import { expect } from 'chai'
-import { Stream } from 'xstream'
-
 import * as rb from '../src'
-import { collect } from './helpers'
 
 interface Parent { child: string }
 
@@ -12,7 +9,7 @@ describe('AsyncValue', () => {
       const child$ = asyncStream(loading(), loaded('foo'), loading())
         .compose(rb.AsyncValue.waitFor)
 
-      expect(await collect(child$)).to.eql([
+      expect(await child$.collect()).to.eql([
         'foo'
       ])
     })
@@ -21,9 +18,9 @@ describe('AsyncValue', () => {
   describe('.getChild()', () => {
     it('should descend into synchronous child of parent stream', async () => {
       const child$ = asyncStream(loading(), loaded({ child: 'foo' }))
-        .compose(rb.AsyncValue.getChild((p: Parent) => Stream.of(p.child)))
+        .compose(rb.AsyncValue.getChild((p: Parent) => rb.DataStream.of(p.child)))
 
-      expect(await collect(child$)).to.eql([
+      expect(await child$.collect()).to.eql([
         loading(),
         loaded('foo')
       ])
@@ -32,10 +29,10 @@ describe('AsyncValue', () => {
     it('should descend into child pending value of parent stream', async () => {
       const child$ = asyncStream(loading(), loaded({ child: 'foo' }))
         .compose(rb.AsyncValue.getChild((p: Parent) =>
-          Stream.of<rb.AsyncValue<string>>(loading(), loaded(p.child)))
+          rb.DataStream.of<rb.AsyncValue<string>>(loading(), loaded(p.child)))
         )
 
-      expect(await collect(child$)).to.eql([
+      expect(await child$.collect()).to.eql([
         loading(),
         loading(),
         loaded('foo')
@@ -44,8 +41,8 @@ describe('AsyncValue', () => {
   })
 })
 
-function asyncStream<T>(...values: rb.AsyncValue<T>[]): Stream<rb.AsyncValue<T>> {
-  return Stream.of(...values)
+function asyncStream<T>(...values: rb.AsyncValue<T>[]): rb.DataStream<rb.AsyncValue<T>> {
+  return rb.DataStream.of(...values)
 }
 
 function loading(): rb.MissingAsyncValue {

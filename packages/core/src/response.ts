@@ -1,6 +1,6 @@
 import { ReactElement } from 'react'
-import { Stream } from 'xstream'
 
+import { DataStream } from './stream'
 import { Transition } from './transition'
 
 export type MountResponse
@@ -14,10 +14,10 @@ export interface MountRender {
   status?: number
 
   /** Page title */
-  title: Stream<string>
+  title: DataStream<string>
 
   /** Stream of dom values */
-  body?: Stream<ReactElement<{}>>
+  body?: DataStream<ReactElement<{}>>
 }
 
 
@@ -38,7 +38,7 @@ export interface MountRedirect<RouteParams, Params extends RouteParams> {
 export function defaultResponse(): MountResponse {
   return {
     state: 'render',
-    title: Stream.from([''])
+    title: DataStream.of('')
   }
 }
 

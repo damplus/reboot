@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { render } from 'react-dom'
-import { Stream } from 'xstream'
+import { DataStream } from 'reboot-core'
 import * as qs from 'querystring'
 import { uniqueId } from 'lodash'
 
@@ -14,11 +14,11 @@ import {
   Store, createStore
 } from 'reboot-core'
 
-import { toPromise, popState$, log } from './util'
+import { popState$, log } from './util'
 
 export interface MountParams {
   routes: AnyRoute[]
-  transitions$: Stream<string>
+  transitions$: DataStream<string>
   path: string
   onTitleChange: (title: string) => void
   onPushLocation: (data: any, title: string, url?: string | null) => void
@@ -31,7 +31,7 @@ export default function clientMain(routes: RouteDeclaration[]) {
   return Promise.resolve().then(() =>
     start({
       routes: routes.map(unpackRouteDeclaration),
-      transitions$: Stream.merge(popState$, transition$),
+      transitions$: DataStream.merge(popState$, transition$),
       onPushLocation: history.pushState.bind(history),
       onReplaceLocation: history.replaceState.bind(history),
       onTitleChange: title => { document.title = title },
@@ -86,8 +86,9 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
         throw new Error('No body declared on route')
       }
 
-      return toPromise(
-        response.body.take(1).map(content =>
+      return response.body
+        .take(1)
+        .map(content =>
           <Client
             store={store}
             initialContent={content}
@@ -99,7 +100,7 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
             onReplaceLocation={params.onReplaceLocation}
           />
         )
-      )
+        .first()
 
     } else {
       const path = stringifyTransition(response.location)
@@ -121,7 +122,7 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
 
 export interface ClientProps {
   store: Store<{}>
-  transitions: Stream<Transition<{}, {}>>
+  transitions: DataStream<Transition<{}, {}>>
   initialRequest: BaseRequest
   initialResponse: MountRender
   initialContent?: React.ReactElement<{}>
@@ -200,43 +201,41 @@ export class Client extends React.Component<ClientProps, ClientState> {
         }
 
         // Perform initial title/content render
-        return toPromise(
-          Stream.combine(response.body.take(1), response.title.take(1))
-        )
-        .then((responses) => {
-          log.trace('render completed for route', address)
-          // Set app state and complete the transition
-          const [content, title] = responses
+        return DataStream
+          .combine(response.body.take(1), response.title.take(1))
+          .first()
+          .then(([content, title]) => {
+            log.trace('render completed for route', address)
 
-          this.setState({ request, response, content: content || <div/> }, () => Promise.resolve().then(() => {
-            log.trace('transition complete for route', address)
+            this.setState({ request, response, content: content || <div/> }, () => Promise.resolve().then(() => {
+              log.trace('transition complete for route', address)
 
-            if (this.transitionID !== transitionID) {
-              log.trace('(ignoring due to transition race)')
-              return
-            }
+              if (this.transitionID !== transitionID) {
+                log.trace('(ignoring due to transition race)')
+                return
+              }
 
-            this.transitionID = undefined
-            this.routeDidTransition()
+              this.transitionID = undefined
+              this.routeDidTransition()
 
-            if (replaceState) {
-              this.props.onReplaceLocation(undefined, title, stringifyTransition(target))
+              if (replaceState) {
+                this.props.onReplaceLocation(undefined, title, stringifyTransition(target))
 
-            } else {
-              this.props.onPushLocation(undefined, title, stringifyTransition(target))
-            }
-          }))
-        })
+              } else {
+                this.props.onPushLocation(undefined, title, stringifyTransition(target))
+              }
+            }))
+          })
 
-      } else {
-        log.trace('redirect', address, '->', stringifyTransition(response.location))
-        return this.performTransition(response.location, true)
-      }
-    })
-    .catch(err => {
-      log.trace('transition failed for route', address, 'with error', err)
-      return Promise.reject(err)
-    })
+        } else {
+          log.trace('redirect', address, '->', stringifyTransition(response.location))
+          return this.performTransition(response.location, true)
+        }
+      })
+      .catch(err => {
+        log.trace('transition failed for route', address, 'with error', err)
+        return Promise.reject(err)
+      })
   }
 
   routeWillTransition() {
