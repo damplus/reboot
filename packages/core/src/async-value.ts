@@ -60,9 +60,13 @@ export abstract class AsyncValue<T> {
   abstract get optimisticValue(): T | undefined
   abstract get mutationType(): MutationType | undefined
 
+  abstract toStream(): DataStream<T>
   abstract flatMap<U>(fn: (x: T) => AsyncValue<U>): AsyncValue<U>
   abstract withDefault<U>(defaultVal: U | ((x: MissingAsyncValue) => U)): PresentAyncValue<T | U>
-  abstract map<U>(fn: (x: T) => U): AsyncValue<U>
+
+  map<U>(fn: (x: T) => U): AsyncValue<U> {
+    return this.flatMap(x => new PresentAyncValue({ status: 'loaded', value: fn(x) }))
+  }
 
   getWithDefault<U>(defaultVal: U | ((x: MissingAsyncValue) => U)): T | U {
     return this.withDefault(defaultVal).value
@@ -100,15 +104,8 @@ export class PresentAyncValue<T> extends AsyncValue<T> {
     return undefined
   }
 
-  map<U>(fn: (x: T) => U): AsyncValue<U> {
-    // [bug]: Mutation is discarded as it may have a different type to value.
-    //        Could transform mutation too, although this may have unpredicatable effects
-
-    return new PresentAyncValue({
-      status: 'loaded',
-      value: fn(this.value),
-      reloading: this.loading
-    })
+  toStream(): DataStream<T> {
+    return DataStream.of(this.value)
   }
 
   flatMap<U>(fn: (x: T) => AsyncValue<U>): AsyncValue<U> {
@@ -139,8 +136,12 @@ export class MissingAsyncValue extends AsyncValue<never> {
     return this
   }
 
-  map(): MissingAsyncValue {
-    return this
+  toStream(): DataStream<never> {
+    if (this.state.status === 'loading' || this.state.status === 'deleted') {
+      return DataStream.never()
+    }
+
+    return DataStream.error(this.state.error)
   }
 
   withDefault<T>(defaultVal: T  | ((x: MissingAsyncValue) => T)) {
