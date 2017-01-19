@@ -4,7 +4,7 @@ import { startsWith } from 'lodash'
 import { Reducer } from 'redux'
 
 import { MountResponse } from './response'
-import { BaseRequest } from './request'
+import { BaseRequest, Cookies } from './request'
 import { Middleware } from './middleware'
 import { Store } from './store'
 import { HttpClient, HasHTTPClient } from './http'
@@ -37,14 +37,15 @@ export interface LoginResponse {
 
 export function oauth(config: AuthOpts): Middleware<BaseRequest & HasHTTPClient, HasAuthService & HasHTTPClient> {
   return async (req, next) => {
-    const state = await initialAuthState(req.http, config.loginEndpoint)
+    const state = await initialAuthState(req.http, config.loginEndpoint, req.cookies)
     const store = req.store.addReducer('oauth', authStateReducer(state))
 
     const service = new AuthService({
       http: req.http,
       store,
       config,
-      location: req.location
+      location: req.location,
+      cookies: req.cookies
     })
 
     return next({ auth: service, http: service.authenicatedRequest.bind(service) })
@@ -85,8 +86,9 @@ export class AuthService {
   private config: AuthOpts
   private location: Transition<{}, {}>
   private store: Store<HasAuthState>
+  private cookies: Cookies
 
-  constructor(opts: { config: AuthOpts, store: Store<HasAuthState>, http: HttpClient, location: Transition<{}, {}> }) {
+  constructor(opts: { config: AuthOpts, store: Store<HasAuthState>, http: HttpClient, location: Transition<{}, {}>, cookies: Cookies }) {
     if (process.env.NODE_ENV === 'production' && process.env.ALLOW_INSECURE_HTTP_CREDENTIALS) {
       throw new Error('$ALLOW_INSECURE_HTTP_CREDENTIALS is not allowed in production')
     }
@@ -95,6 +97,7 @@ export class AuthService {
     this.http = opts.http
     this.config = opts.config
     this.location = opts.location
+    this.cookies = opts.cookies
   }
 
   loggedIn(): boolean {
@@ -103,7 +106,7 @@ export class AuthService {
 
   async logOut() {
     this.store.dispatch<AuthStateAction>({ type: 'auth.logout' })
-    window.sessionStorage.removeItem(SESSION_STORAGE_KEY)
+    this.cookies.delete(REFRESH_COOKIE_KEY)
   }
 
   async logIn(credentials: LoginParams) {
@@ -120,7 +123,7 @@ export class AuthService {
     log.trace('Login succeeded')
 
     this.store.dispatch<AuthStateAction>({ type: 'auth.login', credentials: response })
-    window.sessionStorage.setItem(SESSION_STORAGE_KEY, response.refresh_token)
+    this.cookies.set(REFRESH_COOKIE_KEY, response.refresh_token)
 
     requestTransition(this.startPage())
   }
@@ -194,31 +197,27 @@ export class AuthService {
 
 /** Confirms that the user is logged in by checking against the validation endpoint */
 
-async function initialAuthState(http: HttpClient, loginEndpoint: string): Promise<AuthState> {
-  // [fixme] - Browser-specific code
-  if (typeof window !== 'undefined' && window.sessionStorage) {
-    // [fixme] - Use cookies instead
-    const refresh_token = window.sessionStorage.getItem(SESSION_STORAGE_KEY)
+async function initialAuthState(http: HttpClient, loginEndpoint: string, cookies: Cookies): Promise<AuthState> {
+  const refresh_token = cookies.get(REFRESH_COOKIE_KEY)
 
-    if (refresh_token) {
+  if (refresh_token) {
     try {
-        log.trace('Found a refresh token. Validating it...')
+      log.trace('Found a refresh token. Validating it...')
 
-        const { access_token } = await http(loginEndpoint, {
-          method: 'POST',
-          headers: new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' }),
-          body: qs.stringify({
-            grant_type: 'refresh_token',
-            refresh_token
-          }),
-        }).then<LoginResponse>(r => r.json())
+      const { access_token } = await http(loginEndpoint, {
+        method: 'POST',
+        headers: new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' }),
+        body: qs.stringify({
+          grant_type: 'refresh_token',
+          refresh_token
+        }),
+      }).then<LoginResponse>(r => r.json())
 
-        log.trace('Token is valid. Entering route in logged-in state')
-        return { status: 'logged-in', token: access_token, refresh: refresh_token }
+      log.trace('Token is valid. Entering route in logged-in state')
+      return { status: 'logged-in', token: access_token, refresh: refresh_token }
 
-      } catch (err) {
-        log.trace('Token is not valid')
-      }
+    } catch (err) {
+      log.trace('Token is not valid')
     }
   }
 
@@ -250,4 +249,4 @@ export function authStateReducer(initialState: AuthState): Reducer<AuthState> {
   }
 }
 
-const SESSION_STORAGE_KEY = 'reboot.app.auth'
+const REFRESH_COOKIE_KEY = 'reboot.app.auth'

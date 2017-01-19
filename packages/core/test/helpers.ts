@@ -14,7 +14,12 @@ export function createTestRequest(): rb.BaseRequest {
       }),
       params: {}
     },
-    store: rb.createStore()
+    store: rb.createStore(),
+    cookies: {
+      get: () => undefined,
+      set: () => {},
+      delete: () => {}
+    }
   }
 }
 

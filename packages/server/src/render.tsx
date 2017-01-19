@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { DataStream } from 'reboot-core'
+import { DataStream, Cookies } from 'reboot-core'
 import * as qs from 'querystring'
 
 import {
@@ -15,6 +15,7 @@ export interface MountParams {
   matcher: Matcher<AnyRoute>
   pathname: string
   query: string
+  cookies: Cookies
 }
 
 export interface RenderOutput {
@@ -30,7 +31,11 @@ export function render(params: MountParams): Promise<RenderOutput> {
     return Promise.reject(new Error('Failed to match {params.path}'))
   }
 
-  const req: BaseRequest = { location, store: createStore() }
+  const req: BaseRequest = {
+    location,
+    store: createStore(),
+    cookies: params.cookies
+  }
 
   return location.handler.apply(req, terminalNext()).then((response): RenderOutput | Promise<RenderOutput> => {
     if (response.state === 'render') {

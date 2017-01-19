@@ -113,7 +113,12 @@ async function createClientRenderer(props: RendererParams) {
         transitions$: props.transitions$ || DataStream.never(),
         onTitleChange: props.onTitleChange || (() => {}),
         onPushLocation: props.onPushLocation || (() => {}),
-        onReplaceLocation: props.onReplaceLocation || (() => {})
+        onReplaceLocation: props.onReplaceLocation || (() => {}),
+        cookies: {
+          get: () => undefined,
+          set: () => {},
+          delete: () => {}
+        }
       },
       props
     )
