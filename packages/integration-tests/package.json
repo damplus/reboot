@@ -2,7 +2,7 @@
   "name": "reboot-integration-tests",
   "private": true,
   "description": "Reboot React Framework",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "scripts": {
     "start": "node start.js",
     "typecheck": "../../node_modules/.bin/tsc --noemit",
@@ -18,9 +18,9 @@
     "@types/rimraf": "0.0.28",
     "cheerio": "^0.22.0",
     "node-fetch": "^1.6.3",
-    "reboot-core": "^0.5.3",
-    "reboot-html-client": "^0.5.3",
-    "reboot-server": "^0.5.3",
+    "reboot-core": "^0.6.0",
+    "reboot-html-client": "^0.6.0",
+    "reboot-server": "^0.6.0",
     "rimraf": "^2.5.4"
   }
 }
