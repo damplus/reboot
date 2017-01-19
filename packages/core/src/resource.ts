@@ -1,8 +1,8 @@
-import { merge } from 'lodash'
+import { merge, fromPairs, zip } from 'lodash'
 
 import { DataStream } from './stream'
 import { Store } from './store'
-import { AsyncValue, AsyncValueStream, AsyncListStream, MissingAsyncValue, PresentAyncValue } from './async-value'
+import { AsyncValue, AsyncValueStream, MissingAsyncValue, PresentAyncValue } from './async-value'
 
 export type ResourceMutation<T>
 = { type: 'put', value: T }
@@ -20,19 +20,28 @@ export function resourceValue<T>(s?: ResourceState<T>): AsyncValue<T> {
   }
 }
 
+export interface ResourceConfig<T> {
+  key: string
+  store: Store<{}>
+  fetch: (x: string) => Promise<T>
+  fetchMany?: (x: string[]) => Promise<{ [key: string]: T }>
+}
+
 export class Resource<T> {
   private store: Store<{ [key: string]: ResourceStateMap }>
   private key: string
   private fetchImpl: (x: string) => Promise<T>
+  private fetchManyImpl?: (x: string[]) => Promise<{ [key: string]: T }>
 
-  constructor(opts: { key: string, store: Store<{}>, fetch: (x: string) => Promise<T> }) {
+  constructor(opts: ResourceConfig<T>) {
     this.store = opts.store.addReducer(opts.key, httpResourceReducer(opts.key))
     this.key = opts.key
     this.fetchImpl = opts.fetch
+    this.fetchManyImpl = opts.fetchMany
   }
 
-  $(keys: string[]): AsyncListStream<T>
-  $(key: string): AsyncValueStream<T>
+  $(keys: string[]): DataStream<T[]>
+  $(key: string): DataStream<T>
 
   $(selector: string[] | string): DataStream<any> {
     if (typeof selector === 'string') {
@@ -44,7 +53,7 @@ export class Resource<T> {
     })
 
     } else {
-      selector.forEach(s => this.fetch(s, false))
+      this.fetch(selector, false)
 
       return this.store.select$(state => {
         const resourceState = state[this.key]
@@ -88,8 +97,12 @@ export class Resource<T> {
     })
   }
 
-  fetch(key: string, reload: boolean = true): Promise<void> {
-    if (this.state()[key] && !reload) {
+  fetch(key: string | string[], reload: boolean = true): Promise<void> {
+    if (typeof key !== 'string') {
+      return this.fetchMany(key, reload)
+    }
+
+    if (this.hasFetched(key) && !reload) {
       return Promise.resolve()
     }
 
@@ -103,6 +116,38 @@ export class Resource<T> {
         this.store.dispatch<ResourceAction>({ type: 'http:fetch:failed', resourceKey: this.key, keys: [key], error })
       }
     )
+  }
+
+  private fetchMany(keys: string[], reload: boolean = true): Promise<void> {
+    if (!reload) {
+      keys = keys.filter(x => !this.hasFetched(x))
+    }
+
+    if (keys.length === 0) {
+      return Promise.resolve()
+    }
+
+    this.store.dispatch<ResourceAction>({ type: 'http:fetch:start', resourceKey: this.key, keys })
+    const fetchImpl = this.fetchManyImpl || this.syntheticFetchMany()
+
+    return Promise.resolve(keys).then(fetchImpl).then(
+      (payload) => {
+        this.store.dispatch<ResourceAction>({ type: 'http:fetch:complete', resourceKey: this.key, payload })
+      },
+      (error) => {
+        this.store.dispatch<ResourceAction>({ type: 'http:fetch:failed', resourceKey: this.key, keys, error })
+      }
+    )
+  }
+
+  private syntheticFetchMany() {
+    return (keys: string[]): Promise<{ [key: string]: T }> =>
+      Promise.all(keys.map(this.fetchImpl)).then(results => fromPairs(zip<{}>(keys, results)))
+  }
+
+  private hasFetched(id: string) {
+    const state = this.state()[id]
+    return state && state.status !== 'failed'
   }
 
   private state() {
@@ -131,19 +176,20 @@ export class ResourceQuery<Q, T> {
     this.queryHandler = opts.queryHandler
   }
 
-  $(key: string): AsyncValueStream<AsyncListStream<T>> {
-    return this.store.select$((state): AsyncValue<AsyncListStream<T>> => {
+  $(key: string): AsyncValueStream<T[]> {
+    return this.store.select$((state): AsyncValueStream<T[]> => {
       const resourceState = this.state()
       const resultState = resourceState[key] as ResourceState<string[]>
 
       if (resultState && resultState.status === 'loaded') {
-        const results = this.resource.$(resultState.value)
-        return AsyncValue.coerceFrom<AsyncListStream<T>>(results)
+        return this.resource.$(resultState.value)
+          .map(AsyncValue.of)
 
       } else {
-        return new MissingAsyncValue(resultState)
+        return DataStream.of(new MissingAsyncValue(resultState))
       }
     })
+    .flatMap(x => x)
   }
 
   async setQuery(key: string, q: Q) {
