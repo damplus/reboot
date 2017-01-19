@@ -21,7 +21,12 @@ export function renderMiddleware(buildDir: string, opts: ServeOpts = {}): Reques
       render({
         matcher,
         query: req.query,
-        pathname: req.path
+        pathname: req.path,
+        cookies: {
+          get: (key) => req.cookies[key],
+          set: (key, value, opts) => res.cookie(key, value, opts || {}),
+          delete: (key) => res.clearCookie(key)
+        }
       })
     )
     .then(output => {

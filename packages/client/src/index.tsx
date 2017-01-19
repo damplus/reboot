@@ -1,8 +1,9 @@
 import * as React from 'react'
 import { render } from 'react-dom'
-import { DataStream } from 'reboot-core'
+import { DataStream, Cookies } from 'reboot-core'
 import * as qs from 'querystring'
 import { uniqueId } from 'lodash'
+import * as cookie from 'js-cookie'
 
 import {
   terminalNext,
@@ -23,6 +24,7 @@ export interface MountParams {
   onTitleChange: (title: string) => void
   onPushLocation: (data: any, title: string, url?: string | null) => void
   onReplaceLocation: (data: any, title: string, url?: string | null) => void
+  cookies: Cookies
 }
 
 export type RouteDeclaration = AnyRoute | (() => AnyRoute)
@@ -35,7 +37,17 @@ export default function clientMain(routes: RouteDeclaration[]) {
       onPushLocation: history.pushState.bind(history),
       onReplaceLocation: history.replaceState.bind(history),
       onTitleChange: title => { document.title = title },
-      path: window.location.pathname + window.location.search
+      path: window.location.pathname + window.location.search,
+      cookies: {
+        get: (key) => cookie.get(key),
+        set: (key, value, opts) => cookie.set(key, value, opts && {
+          domain: opts.domain,
+          expires: opts.expires,
+          secure: opts.secure,
+          path: opts.path
+        }),
+        delete: (key) => cookie.remove(key)
+      }
     })
   )
   .then(el => render(el, document.getElementById('app')))
@@ -75,7 +87,7 @@ export function start(params: MountParams): Promise<React.ReactElement<{}>> {
 
   const store = createStore()
   const location = matchRoute(params.path)
-  const req: BaseRequest = { location, store }
+  const req: BaseRequest = { location, store, cookies: params.cookies }
   log.trace('matched initial route', stringifyTransition(location))
 
   return unpackRouteDeclaration(location.handler).apply(req, terminalNext()).then(response => {
@@ -183,7 +195,8 @@ export class Client extends React.Component<ClientProps, ClientState> {
 
     const request: BaseRequest = {
       location: target,
-      store: this.props.store
+      store: this.props.store,
+      cookies: this.props.initialRequest.cookies
     }
     const transitionID = uniqueId('transition')
     this.transitionID = transitionID

@@ -9,6 +9,8 @@
     "test": "node ../../scripts/test"
   },
   "dependencies": {
+    "@types/js-cookie": "^2.0.28",
+    "js-cookie": "^2.1.3",
     "lodash": "^4.17.4",
     "querystring": "^0.2.0",
     "reboot-core": "^0.5.3"
