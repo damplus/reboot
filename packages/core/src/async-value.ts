@@ -1,4 +1,5 @@
 import { DataStream } from './stream'
+import { find } from 'lodash'
 
 import {
   ResourceStateLoading,
@@ -9,48 +10,36 @@ import {
 } from './resource'
 
 export interface AsyncValueStream<T> extends DataStream<AsyncValue<T>> {}
-export interface AsyncListStream<T> extends DataStream<AsyncValue<T>[]> {}
 
 export abstract class AsyncValue<T> {
-  /**
-   * Stream operator to get a stream of related resources from a resource
-   *
-   * (eg: to convert a stream of `employee` resources to a stream of `company`
-   * resources by following the `employer` relationship)
-   **/
-  static getChild<P, C>(fn: (parent: P) => DataStream<AsyncValue<C>>): (parent$: DataStream<AsyncValue<P>>) => DataStream<AsyncValue<C>>
-  static getChild<P, C>(fn: (parent: P) => DataStream<C>): (parent$: DataStream<AsyncValue<P>>) => DataStream<AsyncValue<C>>
-
-  static getChild<P, C>(fn: (parent: P) => DataStream<C | AsyncValue<C>>) {
-    return (parent$: DataStream<AsyncValue<P>>): DataStream<AsyncValue<C>> => (
-      AsyncValue.flattenStreamOf(parent$.map(parentRes => parentRes.map(fn)))
-    )
-  }
-
-  /**
-   * Eliminates the intermediate async state between two streams, merging with the async state
-   * of the inner stream if present
-   */
-  static flattenStreamOf<T>(stream: DataStream<AsyncValue<DataStream<T | AsyncValue<T>>>>): DataStream<AsyncValue<T>> {
-    return stream
-      .map(r1 => r1.map(r2$ => r2$.map(AsyncValue.coerceFrom)))
-      .flatMap(r1 => r1.getWithDefault(missingVal => DataStream.of(missingVal)))
-  }
-
   static waitFor<T>(s: DataStream<AsyncValue<T>>): DataStream<T> {
-    return s.flatMap(val =>val
-      .map(x => DataStream.of(x))
-      .getWithDefault(DataStream.empty())
-    )
+    return s.flatMap(val => val.toStream())
   }
 
-  static coerceFrom<T>(value: T | AsyncValue<T>): AsyncValue<T> {
-    if (value instanceof AsyncValue) {
-      return value
+  static of<T>(value: T): AsyncValue<T> {
+    return new PresentAyncValue({ status: 'loaded', value })
+  }
 
-    } else {
-      return new PresentAyncValue({ status: 'loaded', value })
+  static loading(): AsyncValue<never> {
+    return new MissingAsyncValue({ status: 'loading' })
+  }
+
+  static error(error: Error): AsyncValue<never> {
+    return new MissingAsyncValue({ status: 'failed', error })
+  }
+
+  static all<T>(value: AsyncValue<T>[]): AsyncValue<T[]> {
+    if (value.every(x => x instanceof PresentAyncValue)) {
+      return new PresentAyncValue({
+        status: 'loaded',
+        value: value.map(x => x.value!)
+      })
     }
+
+    const error = find(value, v => v.error)
+    if (error) return new MissingAsyncValue({ status: 'failed', error: error.error! })
+
+    return new MissingAsyncValue({ status: 'loading' })
   }
 
   abstract get loading(): boolean
