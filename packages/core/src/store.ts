@@ -30,7 +30,7 @@ export function createStore(): Store<{}> {
     start: listener => {
       listener.next(reduxStore.getState())
       unsubscribe = reduxStore.subscribe(() => {
-        listener.next(reduxStore.getState())
+        setTimeout(() => listener.next(reduxStore.getState()), 0)
       })
     },
     stop: () => unsubscribe()
