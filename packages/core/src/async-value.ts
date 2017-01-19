@@ -11,23 +11,41 @@ import {
 
 export interface AsyncValueStream<T> extends DataStream<AsyncValue<T>> {}
 
+/**
+ * Wrapper around a value fetched from a remote resource, providing information
+ * about its loading state, nonfatal loading errors, etc.
+ */
 export abstract class AsyncValue<T> {
+/**
+ * Given a stream of AsyncValues, return a stream of. Useful if you have
+ * a stream of results but don't care about displaying a loading state
+ * and want to treat fetch errors as fatal.
+ */
   static waitFor<T>(s: DataStream<AsyncValue<T>>): DataStream<T> {
     return s.flatMap(val => val.toStream())
   }
 
+  /** Create an AsyncValue representing a loaded value
+   */
   static of<T>(value: T): AsyncValue<T> {
     return new PresentAyncValue({ status: 'loaded', value })
   }
 
+  /** Create an AsyncValue representing value in a loading state
+   */
   static loading(): AsyncValue<never> {
     return new MissingAsyncValue({ status: 'loading' })
   }
 
+  /** Create an AsyncValue representing a nonfatal error
+   */
   static error(error: Error): AsyncValue<never> {
     return new MissingAsyncValue({ status: 'failed', error })
   }
 
+  /** Combine an array of AsyncValues into a single value that resolves
+   *  to loaded only when all source values have loaded.
+   */
   static all<T>(value: AsyncValue<T>[]): AsyncValue<T[]> {
     if (value.every(x => x instanceof PresentAyncValue)) {
       return new PresentAyncValue({
