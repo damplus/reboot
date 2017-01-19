@@ -1,7 +1,7 @@
 {
   "name": "reboot-server",
   "description": "Reboot React Framework",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "main": "dist/es5/index.js",
   "typings": "dist/es6/index.d.ts",
   "scripts": {
@@ -22,7 +22,7 @@
     "postcss-flexbugs-fixes": "^2.1.0",
     "postcss-loader": "^1.2.1",
     "querystring": "^0.2.0",
-    "reboot-core": "^0.5.3",
+    "reboot-core": "^0.6.0",
     "resolve": "^1.2.0",
     "sass-loader": "^4.1.1",
     "source-map-loader": "^0.1.5",
