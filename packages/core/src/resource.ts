@@ -10,7 +10,7 @@ export type ResourceMutation<T>
 | { type: 'delete' }
 
 export function resourceValue<T>(s?: ResourceState<T>): AsyncValue<T> {
-  if (!s) throw new Error('Missing resource value. Did you forget to fetch the resource?')
+  if (!s) return AsyncValue.loading()
 
   if (s.status === 'loaded') {
     return new PresentAyncValue(s)
@@ -40,25 +40,27 @@ export class Resource<T> {
     this.fetchManyImpl = opts.fetchMany
   }
 
-  $(keys: string[]): DataStream<T[]>
-  $(key: string): DataStream<T>
+  $(keys: string[]): AsyncValueStream<T[]>
+  $(key: string): AsyncValueStream<T>
 
-  $(selector: string[] | string): DataStream<any> {
+  $(selector: string[] | string): AsyncValueStream<any> {
     if (typeof selector === 'string') {
       this.fetch(selector, false)
 
       return this.store.select$(state => {
-      const resourceState = state[this.key]
-      return resourceState && resourceValue(resourceState[selector] || undefined)
-    })
+        const resourceState = state[this.key]
+        return resourceValue(resourceState[selector] || undefined)
+      })
 
     } else {
       this.fetch(selector, false)
 
       return this.store.select$(state => {
         const resourceState = state[this.key]
-        return resourceState && selector.map(k => resourceState[k])
+        const values = selector.map(k => resourceState[k])
           .map(resourceValue)
+
+        return AsyncValue.all(values)
       })
     }
   }
@@ -183,7 +185,6 @@ export class ResourceQuery<Q, T> {
 
       if (resultState && resultState.status === 'loaded') {
         return this.resource.$(resultState.value)
-          .map(AsyncValue.of)
 
       } else {
         return DataStream.of(new MissingAsyncValue(resultState))
