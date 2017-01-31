@@ -19,8 +19,8 @@ export interface Subscription {
 export class DataStream<T> {
   private streamImpl: Stream<T>
 
-  private constructor(source: Stream<T>) {
-    this.streamImpl = source.compose(skipRepeats()).remember()
+  private constructor(source: Stream<T>, isEqual?: (a: T, b: T) => boolean) {
+    this.streamImpl = source.compose(skipRepeats(isEqual)).remember()
   }
 
   static createWithTestListener<T>(): { stream: DataStream<T>, listener: Listener<T> } {
@@ -132,6 +132,10 @@ export class DataStream<T> {
 
   take(count: number): DataStream<T> {
     return new DataStream(this.streamImpl.take(count))
+  }
+
+  distinguishBy(comparator: (a: T, b: T) => boolean): DataStream<T> {
+    return new DataStream(this.streamImpl, comparator)
   }
 
   compose<U>(fn: (x$: DataStream<T>) => U): U {

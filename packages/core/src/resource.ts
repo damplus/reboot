@@ -44,24 +44,21 @@ export class Resource<T> {
   $(key: string): AsyncValueStream<T>
 
   $(selector: string[] | string): AsyncValueStream<any> {
+    const state$ = this.store.select$(state => state[this.key])
+
     if (typeof selector === 'string') {
       this.fetch(selector, false)
-
-      return this.store.select$(state => {
-        const resourceState = state[this.key]
-        return resourceValue(resourceState[selector] || undefined)
-      })
+      return state$
+        .map(s => s[selector])
+        .map(resourceValue)
 
     } else {
       this.fetch(selector, false)
 
-      return this.store.select$(state => {
-        const resourceState = state[this.key]
-        const values = selector.map(k => resourceState[k])
-          .map(resourceValue)
-
-        return AsyncValue.all(values)
-      })
+      return state$
+        .map(s => selector.map(key => s[key]))
+        .distinguishBy((a, b) => a.every((_, i) => a[i] === b[i]))
+        .map(values => AsyncValue.all(values.map(resourceValue)))
     }
   }
 
