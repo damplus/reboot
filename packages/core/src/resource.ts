@@ -184,7 +184,11 @@ export class ResourceQuery<Q, T> {
         return this.resource.$(resultState.value)
 
       } else {
-        return DataStream.of(new MissingAsyncValue(resultState))
+        if(resultState) {
+            return DataStream.of(new MissingAsyncValue(resultState))
+        } else {
+          return DataStream.of(new PresentAyncValue({status: 'loaded', value: []}))
+        }
       }
     })
     .flatMap(x => x)
