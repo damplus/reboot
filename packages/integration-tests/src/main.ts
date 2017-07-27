@@ -6,7 +6,6 @@ import renderMiddleware, { devMiddleware } from 'reboot-server'
 export default function main(opts: { production: boolean, buildDir?: string }) {
   return new Promise<Server>(resolve => {
     const server = express()
-
     if (opts.production) {
       if (!opts.buildDir) throw new Error('opts.buildDir is required')
 
@@ -17,6 +16,6 @@ export default function main(opts: { production: boolean, buildDir?: string }) {
       server.use(devMiddleware('./src/entrypoints/client'))
     }
 
-    const instance = server.listen(process.env.PORT || 0, () => resolve(instance))
+    const instance = server.listen(process.env['PORT'] || 0, () => resolve(instance))
   })
 }
