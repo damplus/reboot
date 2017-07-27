@@ -17,6 +17,19 @@ describe('Resource', () => {
       return request!
     }
 
+    it('should not fetch until subscribe', async () => {
+      let hasFetched = false
+      const request = await setup(async () => {
+        hasFetched = true
+        return { salutation: 'hello', object: 'world' }
+      })
+
+       request!.fooResource.$('foo')
+      await Promise.resolve()
+
+      expect(hasFetched).to.be.false
+    })
+
     it('should load successfuly fetched resource', async () => {
       const request = await setup(() => Promise.resolve({ salutation: 'hello', object: 'world' }))
       const events = request!.fooResource.$('foo').take(2).collect()

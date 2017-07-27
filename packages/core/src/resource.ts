@@ -47,15 +47,14 @@ export class Resource<T> {
     const state$ = this.store.select$(state => state[this.key])
 
     if (typeof selector === 'string') {
-      this.fetch(selector, false)
       return state$
+        .onSubscribe(() => this.fetch(selector, false))
         .map(s => s[selector])
         .map(resourceValue)
 
     } else {
-      this.fetch(selector, false)
-
       return state$
+        .onSubscribe(() => this.fetch(selector, false))
         .map(s => selector.map(key => s[key]))
         .distinguishBy((a, b) => a.every((_, i) => a[i] === b[i]))
         .map(values => AsyncValue.all(values.map(resourceValue)))
