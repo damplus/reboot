@@ -193,10 +193,10 @@ export class ResourceQuery<Q, T> {
     .flatMap(x => x)
   }
 
-  async setQuery(key: string, q: Q) {
+  setQuery(key: string, q: Q) {
     this.store.dispatch<ResourceAction>({ type: 'http:fetch:start', resourceKey: this.key, keys: [key] })
 
-    Promise.resolve(q).then(this.queryHandler).then(
+    return Promise.resolve(q).then(this.queryHandler).then(
       (payload) => {
         this.store.dispatch<ResourceAction>({ type: 'http:fetch:complete', resourceKey: this.key, payload: { [key]: payload } })
       },
